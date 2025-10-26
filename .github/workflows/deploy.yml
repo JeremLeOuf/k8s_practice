@@ -137,6 +137,20 @@ jobs:
         echo "🔍 Checking and importing existing resources..."
         export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
         
+        # Lambda Functions (CRITICAL - prevents hanging!)
+        echo "⚡ Importing Lambda functions..."
+        terraform state show aws_lambda_function.get_items &>/dev/null || terraform import aws_lambda_function.get_items pkb-api-get-items 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_lambda_function.create_item &>/dev/null || terraform import aws_lambda_function.create_item pkb-api-create-item 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_lambda_function.delete_item &>/dev/null || terraform import aws_lambda_function.delete_item pkb-api-delete-item 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_lambda_function.add_transaction &>/dev/null || terraform import aws_lambda_function.add_transaction budget-tracker-add-transaction 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_lambda_function.get_balance &>/dev/null || terraform import aws_lambda_function.get_balance budget-tracker-get-balance 2>/dev/null || echo "⚠️ Skipped"
+        
+        # Lambda Permissions
+        echo "🔐 Importing Lambda permissions..."
+        terraform state show aws_lambda_permission.api_gateway_get_items &>/dev/null || terraform import aws_lambda_permission.api_gateway_get_items pkb-api-get-items/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_lambda_permission.api_gateway_create_item &>/dev/null || terraform import aws_lambda_permission.api_gateway_create_item pkb-api-create-item/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_lambda_permission.api_gateway_delete_item &>/dev/null || terraform import aws_lambda_permission.api_gateway_delete_item pkb-api-delete-item/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Skipped"
+        
         # DynamoDB Tables
         echo "📦 Importing DynamoDB tables..."
         terraform state show aws_dynamodb_table.knowledge_base &>/dev/null || terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase 2>/dev/null || echo "⚠️ Skipped"

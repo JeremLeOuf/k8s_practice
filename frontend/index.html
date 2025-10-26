@@ -29,6 +29,29 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .nav-actions {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        
+        .nav-button:hover {
+            transform: translateY(-2px);
         }
 
         h1 {
@@ -169,6 +192,9 @@
         <header>
             <h1>📚 Personal Knowledge Base</h1>
             <p class="subtitle">A serverless API powered by AWS Lambda and API Gateway</p>
+            <div class="nav-actions">
+                <a href="grafana.html" class="nav-button">📊 View Grafana Dashboard</a>
+            </div>
         </header>
 
         <div class="config-section">

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafana Dashboard - Personal Knowledge Base</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        iframe {
+            width: 100%;
+            height: calc(100vh - 70px);
+            border: none;
+        }
+        
+        .error-message {
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            height: calc(100vh - 70px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .error-message h2 {
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+        
+        .error-message p {
+            color: #666;
+            margin-bottom: 10px;
+            max-width: 600px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        .button {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Grafana Dashboard</h1>
+        <div class="nav-links">
+            <a href="index.html">← Back to App</a>
+            <a href="#" onclick="location.reload()">🔄 Refresh</a>
+        </div>
+    </div>
+    
+    <!-- Grafana iframe - expects Grafana to be accessible at localhost:3000 or via port-forward -->
+    <iframe 
+        id="grafana-frame" 
+        src="http://localhost:3000"
+        title="Grafana Dashboard">
+    </iframe>
+    
+    <!-- Error message shown if Grafana is not accessible -->
+    <div class="error-message" id="error-message" style="display: none;">
+        <h2>⚠️ Grafana Not Accessible</h2>
+        <p>To access Grafana, run this command in your terminal:</p>
+        <code style="display: block; margin: 20px 0; padding: 15px; background: #2c3e50; color: white; border-radius: 5px;">
+            kubectl port-forward -n grafana svc/grafana-service 3000:3000
+        </code>
+        <p>Then refresh this page.</p>
+        <a href="index.html" class="button">← Back to App</a>
+    </div>
+    
+    <script>
+        // Check if Grafana is accessible
+        fetch('http://localhost:3000/api/health')
+            .then(response => {
+                if (response.ok) {
+                    console.log('Grafana is accessible');
+                } else {
+                    showError();
+                }
+            })
+            .catch(() => {
+                showError();
+            });
+        
+        function showError() {
+            document.getElementById('grafana-frame').style.display = 'none';
+            document.getElementById('error-message').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
+
