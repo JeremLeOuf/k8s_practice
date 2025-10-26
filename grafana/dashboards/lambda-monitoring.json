@@ -1,0 +1,85 @@
+{
+  "dashboard": {
+    "title": "Lambda Monitoring - Personal Knowledge Base",
+    "tags": ["lambda", "aws", "monitoring"],
+    "timezone": "browser",
+    "schemaVersion": 27,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "type": "graph",
+        "title": "Lambda Invocations (All Functions)",
+        "targets": [
+          {
+            "expr": "sum(aws_lambda_invocations{functionName=~\"pkb-api-.*\"}) by (functionName)",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "type": "graph",
+        "title": "Lambda Errors (All Functions)",
+        "targets": [
+          {
+            "expr": "sum(aws_lambda_errors{functionName=~\"pkb-api-.*\"}) by (functionName)",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8},
+        "type": "graph",
+        "title": "Lambda Duration (ms)",
+        "targets": [
+          {
+            "expr": "avg(aws_lambda_duration_ms{functionName=~\"pkb-api-.*\"}) by (functionName)",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8},
+        "type": "graph",
+        "title": "Throttles",
+        "targets": [
+          {
+            "expr": "sum(aws_lambda_throttles{functionName=~\"pkb-api-.*\"}) by (functionName)",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "gridPos": {"h": 4, "w": 8, "x": 16, "y": 8},
+        "type": "stat",
+        "title": "Total Invocations (1h)",
+        "targets": [
+          {
+            "expr": "sum(aws_lambda_invocations{functionName=~\"pkb-api-.*\"})",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "gridPos": {"h": 4, "w": 8, "x": 16, "y": 12},
+        "type": "stat",
+        "title": "Total Errors (1h)",
+        "targets": [
+          {
+            "expr": "sum(aws_lambda_errors{functionName=~\"pkb-api-.*\"})",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  }
+}
+
