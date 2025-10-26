@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: create-item
+  labels:
+    app: create-item
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: create-item
+  template:
+    metadata:
+      labels:
+        app: create-item
+    spec:
+      containers:
+      - name: create-item
+        image: pkb-create-item:latest
+        imagePullPolicy: Never  # Use local image
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: AWS_EXECUTION_ENV
+          value: "AWS_Lambda_python3.9"
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+
