@@ -2,24 +2,19 @@
 
 set -e
 
-echo "🧹 Cleaning up old CloudFront distributions related to this repo..."
-
-# Get AWS Account ID
-export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-echo "AWS Account ID: $ACCOUNT_ID"
+echo "🔍 Checking for CloudFront distributions..."
 
 # Find all CloudFront distributions with our tag
-echo "🔍 Searching for CloudFront distributions with tag 'Environment'..."
 DISTRIBUTIONS=$(aws cloudfront list-distributions \
   --query "DistributionList.Items[?Comment=='Personal Knowledge Base Frontend'].Id" \
-  --output text)
+  --output text 2>/dev/null || echo "")
 
 if [ -z "$DISTRIBUTIONS" ] || [ "$DISTRIBUTIONS" = "None" ]; then
-  echo "✅ No old CloudFront distributions found"
+  echo "✅ No CloudFront distributions found - Terraform will create new one"
   exit 0
 fi
 
-echo "📋 Found distributions: $DISTRIBUTIONS"
+echo "📋 Found existing CloudFront distributions: $DISTRIBUTIONS"
 
 # Process each distribution
 for DIST_ID in $DISTRIBUTIONS; do
@@ -35,8 +30,14 @@ for DIST_ID in $DISTRIBUTIONS; do
   echo "📊 Status: $STATUS"
   
   if [ "$STATUS" = "Deployed" ] || [ "$STATUS" = "InProgress" ]; then
-    echo "⚠️ Distribution is active or deploying"
-    echo "🔄 Disabling distribution (must be disabled before deletion)..."
+    echo "✅ Distribution is active - keeping it!"
+    echo "💡 Terraform will update this distribution instead of creating new one"
+    continue
+  fi
+  
+  if [ "$STATUS" = "Disabled" ]; then
+    echo "⚠️ Distribution is disabled"
+    echo "🔄 Removing disabled distribution (must be deleted before recreating)..."
     
     # Get current config
     aws cloudfront get-distribution-config --id "$DIST_ID" > /tmp/dist-config.json
@@ -82,13 +83,11 @@ for DIST_ID in $DISTRIBUTIONS; do
       > /dev/null 2>&1 || echo "⚠️ Failed to delete (may have already been deleted)"
     
     echo "✅ Distribution $DIST_ID scheduled for deletion"
-  else
-    echo "✅ Distribution $DIST_ID is already disabled or deleted"
   fi
 done
 
 echo ""
-echo "✅ Cleanup process started"
-echo "⚠️ Note: CloudFront deletions take 15-20 minutes to complete"
-echo "⚠️ Old distributions are being deleted in the background"
+echo "✅ Cleanup complete!"
+echo "💡 Active CloudFront distributions are preserved"
+echo "💡 Only disabled distributions are removed"
 

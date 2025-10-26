@@ -185,6 +185,14 @@ jobs:
         echo "🪣 Importing S3 bucket..."
         terraform state show aws_s3_bucket.frontend &>/dev/null || terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base 2>/dev/null || echo "⚠️ Skipped"
         
+        # CloudFront Distribution (if exists)
+        echo "☁️ Checking for existing CloudFront distributions..."
+        DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Comment=='Personal Knowledge Base Frontend' && Status=='Deployed'].Id | [0]" --output text 2>/dev/null || echo "")
+        if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "null" ]; then
+          echo "☁️ Found existing CloudFront distribution: $DIST_ID"
+          terraform state show aws_cloudfront_distribution.frontend &>/dev/null || terraform import aws_cloudfront_distribution.frontend "$DIST_ID" 2>/dev/null || echo "⚠️ Skipped CloudFront import"
+        fi
+        
         echo "✅ Import check completed"
       continue-on-error: true
     
