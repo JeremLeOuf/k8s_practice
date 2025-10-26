@@ -32,14 +32,18 @@ def handler(event, context):
         # Store in DynamoDB
         table.put_item(Item=item)
         
-        # Check balance and send alert if needed
-        if transaction_type == 'expense':
-            # Get current balance
-            balance = get_current_balance(table)
-            
-            # If balance is low, trigger SNS alert
-            if balance < 0:
-                trigger_alert(table, balance)
+        # Check balance and send alert if needed (optional - don't fail if this errors)
+        try:
+            if transaction_type == 'expense':
+                # Get current balance
+                balance = get_current_balance(table)
+                
+                # If balance is low, trigger SNS alert
+                if balance < 0:
+                    trigger_alert(table, balance)
+        except Exception as alert_error:
+            # Don't fail the transaction if alert fails
+            print(f"Alert check failed (non-critical): {alert_error}")
         
         return {
             'statusCode': 200,
