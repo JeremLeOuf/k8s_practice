@@ -53,3 +53,13 @@ secrets/
 lambda-functions/**/function.zip
 lambda-functions/**/package.zip
 
+lambda-functions/*/botocore/
+lambda-functions/*/boto3/
+lambda-functions/*/dateutil/
+lambda-functions/*/urllib3/
+lambda-functions/*/jmespath/
+lambda-functions/*/s3transfer/
+lambda-functions/*/six.py
+lambda-functions/*/six-*.dist-info/
+lambda-functions/*/*.dist-info/
+lambda-functions/*/*.zip
