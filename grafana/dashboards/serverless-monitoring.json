@@ -1,0 +1,696 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "alias": "get-items",
+          "dimensions": {
+            "FunctionName": "pkb-api-get-items"
+          },
+          "metricName": "Invocations",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        },
+        {
+          "alias": "create-item",
+          "dimensions": {
+            "FunctionName": "pkb-api-create-item"
+          },
+          "metricName": "Invocations",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "B",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        },
+        {
+          "alias": "delete-item",
+          "dimensions": {
+            "FunctionName": "pkb-api-delete-item"
+          },
+          "metricName": "Invocations",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "C",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        }
+      ],
+      "title": "📊 Lambda Invocations (Last 1 Hour)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "none"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "alias": "get-items",
+          "dimensions": {
+            "FunctionName": "pkb-api-get-items"
+          },
+          "metricName": "Errors",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        },
+        {
+          "alias": "create-item",
+          "dimensions": {
+            "FunctionName": "pkb-api-create-item"
+          },
+          "metricName": "Errors",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "B",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        },
+        {
+          "alias": "delete-item",
+          "dimensions": {
+            "FunctionName": "pkb-api-delete-item"
+          },
+          "metricName": "Errors",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "C",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        }
+      ],
+      "title": "⚠️ Lambda Errors (Last 1 Hour)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1000
+              }
+            ]
+          },
+          "unit": "ms"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "alias": "Average Duration (ms)",
+          "dimensions": {
+            "FunctionName": "pkb-api-get-items"
+          },
+          "metricName": "Duration",
+          "namespace": "AWS/Lambda",
+          "period": "5m",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": ["Average"]
+        },
+        {
+          "alias": "Average Duration (ms)",
+          "dimensions": {
+            "FunctionName": "pkb-api-create-item"
+          },
+          "metricName": "Duration",
+          "namespace": "AWS/Lambda",
+          "period": "5m",
+          "refId": "B",
+          "region": "us-east-1",
+          "statistics": ["Average"]
+        },
+        {
+          "alias": "Average Duration (ms)",
+          "dimensions": {
+            "FunctionName": "pkb-api-delete-item"
+          },
+          "metricName": "Duration",
+          "namespace": "AWS/Lambda",
+          "period": "5m",
+          "refId": "C",
+          "region": "us-east-1",
+          "statistics": ["Average"]
+        }
+      ],
+      "title": "⚡ Lambda Duration Performance",
+      "transformations": [],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": ["mean"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "alias": "get-items",
+          "dimensions": {
+            "FunctionName": "pkb-api-get-items"
+          },
+          "metricName": "Throttles",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        },
+        {
+          "alias": "create-item",
+          "dimensions": {
+            "FunctionName": "pkb-api-create-item"
+          },
+          "metricName": "Throttles",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "B",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        },
+        {
+          "alias": "delete-item",
+          "dimensions": {
+            "FunctionName": "pkb-api-delete-item"
+          },
+          "metricName": "Throttles",
+          "namespace": "AWS/Lambda",
+          "period": "1m",
+          "refId": "C",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        }
+      ],
+      "title": "🚦 Lambda Throttles & Concurrency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "N/A"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "dimensions": {
+            "FunctionName": "pkb-api-get-items"
+          },
+          "metricName": "Invocations",
+          "namespace": "AWS/Lambda",
+          "period": "1h",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        }
+      ],
+      "title": "📈 Get Items - Total Invocations",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 16
+      },
+      "id": 6,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "dimensions": {
+            "FunctionName": "pkb-api-create-item"
+          },
+          "metricName": "Invocations",
+          "namespace": "AWS/Lambda",
+          "period": "1h",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        }
+      ],
+      "title": "📈 Create Item - Total Invocations",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 16
+      },
+      "id": 7,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "dimensions": {
+            "FunctionName": "pkb-api-delete-item"
+          },
+          "metricName": "Invocations",
+          "namespace": "AWS/Lambda",
+          "period": "1h",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        }
+      ],
+      "title": "📈 Delete Item - Total Invocations",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "cloudwatch",
+        "uid": "cloudwatch"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 16
+      },
+      "id": 8,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "pluginVersion": "8.0.0",
+      "targets": [
+        {
+          "dimensions": {
+            "FunctionName": "pkb-api-get-items"
+          },
+          "metricName": "Errors",
+          "namespace": "AWS/Lambda",
+          "period": "1h",
+          "refId": "A",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        },
+        {
+          "dimensions": {
+            "FunctionName": "pkb-api-create-item"
+          },
+          "metricName": "Errors",
+          "namespace": "AWS/Lambda",
+          "period": "1h",
+          "refId": "B",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        },
+        {
+          "dimensions": {
+            "FunctionName": "pkb-api-delete-item"
+          },
+          "metricName": "Errors",
+          "namespace": "AWS/Lambda",
+          "period": "1h",
+          "refId": "C",
+          "region": "us-east-1",
+          "statistics": ["Sum"]
+        }
+      ],
+      "title": "⚠️ Total Errors (All Functions)",
+      "type": "stat"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": ["lambda", "aws", "monitoring", "serverless"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "🚀 Serverless App - Real-Time Monitoring",
+  "uid": "serverless-monitoring",
+  "version": 0
+}
+

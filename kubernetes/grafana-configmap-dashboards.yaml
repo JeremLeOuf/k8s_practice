@@ -1,0 +1,242 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: grafana
+  labels:
+    app: grafana
+data:
+  serverless-monitoring.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": "-- Grafana --",
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "gnetId": null,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "tooltip": false,
+                  "viz": false,
+                  "legend": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "reqps"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "legend": {
+              "calcs": ["mean", "max"],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "alias": "get-items",
+              "dimensions": {
+                "FunctionName": "pkb-api-get-items"
+              },
+              "metricName": "Invocations",
+              "namespace": "AWS/Lambda",
+              "period": "1m",
+              "refId": "A",
+              "region": "us-east-1",
+              "statistics": ["Sum"]
+            },
+            {
+              "alias": "create-item",
+              "dimensions": {
+                "FunctionName": "pkb-api-create-item"
+              },
+              "metricName": "Invocations",
+              "namespace": "AWS/Lambda",
+              "period": "1m",
+              "refId": "B",
+              "region": "us-east-1",
+              "statistics": ["Sum"]
+            },
+            {
+              "alias": "delete-item",
+              "dimensions": {
+                "FunctionName": "pkb-api-delete-item"
+              },
+              "metricName": "Invocations",
+              "namespace": "AWS/Lambda",
+              "period": "1m",
+              "refId": "C",
+              "region": "us-east-1",
+              "statistics": ["Sum"]
+            }
+          ],
+          "title": "📊 Lambda Invocations (Last 1 Hour)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "cloudwatch",
+            "uid": "cloudwatch"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "none"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "8.0.0",
+          "targets": [
+            {
+              "alias": "get-items",
+              "dimensions": {
+                "FunctionName": "pkb-api-get-items"
+              },
+              "metricName": "Errors",
+              "namespace": "AWS/Lambda",
+              "period": "1m",
+              "refId": "A",
+              "region": "us-east-1",
+              "statistics": ["Sum"]
+            },
+            {
+              "alias": "create-item",
+              "dimensions": {
+                "FunctionName": "pkb-api-create-item"
+              },
+              "metricName": "Errors",
+              "namespace": "AWS/Lambda",
+              "period": "1m",
+              "refId": "B",
+              "region": "us-east-1",
+              "statistics": ["Sum"]
+            },
+            {
+              "alias": "delete-item",
+              "dimensions": {
+                "FunctionName": "pkb-api-delete-item"
+              },
+              "metricName": "Errors",
+              "namespace": "AWS/Lambda",
+              "period": "1m",
+              "refId": "C",
+              "region": "us-east-1",
+              "statistics": ["Sum"]
+            }
+          ],
+          "title": "⚠️ Lambda Errors (Last 1 Hour)",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 27,
+      "style": "dark",
+      "tags": ["lambda", "aws", "monitoring", "serverless"],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "🚀 Serverless App - Real-Time Monitoring",
+      "uid": "serverless-monitoring",
+      "version": 0
+    }
+
