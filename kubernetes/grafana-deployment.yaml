@@ -23,10 +23,26 @@ spec:
           value: "admin"
         - name: GF_SECURITY_ADMIN_PASSWORD
           value: "admin"
+        - name: GF_INSTALL_PLUGINS
+          value: "grafana-cloudwatch-datasource"
+        - name: GF_PATHS_PROVISIONING
+          value: "/etc/grafana/provisioning"
         volumeMounts:
         - name: grafana-storage
           mountPath: /var/lib/grafana
+        - name: grafana-dashboards
+          mountPath: /var/lib/grafana/dashboards
+          readOnly: true
+        - name: grafana-provisioning
+          mountPath: /etc/grafana/provisioning
+          readOnly: true
       volumes:
       - name: grafana-storage
         emptyDir: {}
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
+      - name: grafana-provisioning
+        configMap:
+          name: grafana-provisioning
 

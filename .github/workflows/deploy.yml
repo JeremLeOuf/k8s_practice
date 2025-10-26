@@ -299,74 +299,34 @@ jobs:
         echo "⏭️  Frontend files unchanged - skipping deployment"
         echo "✅ Previous frontend deployment remains active"
     
-    - name: Wait for CloudFront Deployment
+    - name: Wait for CloudFront to be Reachable
       if: env.NEW_CLOUDFRONT == 'true' || env.NEW_CLOUDFRONT == ''
       working-directory: ./infrastructure
       run: |
-        echo "⏳ Waiting for CloudFront to be fully deployed..."
+        echo "⏳ Waiting for CloudFront CDN to be reachable..."
         
-        # If updating existing CloudFront, wait only 2 minutes
-        if [ "$NEW_CLOUDFRONT" = "false" ]; then
-          echo "✅ CloudFront update detected - using short wait (2 minutes)"
-          TIMEOUT=120
-        else
-          echo "🆕 New CloudFront detected - using full wait (20 minutes)"
-          TIMEOUT=1200
-        fi
-        
-        # Get CloudFront distribution ID and URL
+        # Get CDN URL
         CDN_URL=$(terraform output -raw frontend_cdn_url)
-        CDN_DOMAIN=$(echo $CDN_URL | sed 's|https://||')
-        
-        # Extract distribution ID from CDN domain (e.g., d12345.cloudfront.net)
-        echo "🔍 Looking for distribution with domain: $CDN_DOMAIN"
-        DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='$CDN_DOMAIN'].Id" --output text 2>/dev/null || echo "")
-        
-        if [ -z "$DIST_ID" ]; then
-          echo "⚠️  Could not find CloudFront distribution ID"
-          echo "🌐 CDN URL: $CDN_URL"
-          echo "🌐 Looking for domain: $CDN_DOMAIN"
-          echo "💡 Listing all distributions:"
-          aws cloudfront list-distributions --query "DistributionList.Items[*].[Id,DomainName,Status]" --output table
-          echo "⚠️  Proceeding anyway - CDN may still be deploying"
-          exit 0
-        fi
-        
-        echo "✅ Found distribution: $DIST_ID"
+        echo "🌐 CDN URL: $CDN_URL"
         
         # Set timeout based on whether it's new or update
         if [ "$NEW_CLOUDFRONT" = "false" ]; then
-          echo "💡 This is an update - using 2-minute timeout"
+          echo "✅ CloudFront update - checking reachability (2 min max)"
+          MAX_ATTEMPTS=24  # 24 attempts × 5s = 2 minutes
         else
-          echo "💡 This is a new distribution - using 20-minute timeout"
+          echo "🆕 New CloudFront - checking reachability (5 min max)"
+          MAX_ATTEMPTS=60  # 60 attempts × 5s = 5 minutes
         fi
         
-        ELAPSED=0
-        INTERVAL=15  # Check every 15 seconds
-        
-        while [ $ELAPSED -lt $TIMEOUT ]; do
-          STATUS=$(aws cloudfront get-distribution --id $DIST_ID --query 'Distribution.Status' --output text 2>/dev/null || echo "Unknown")
+        # Simple HTTP check
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$CDN_URL" --max-time 5 || echo "000")
           
-          echo "⏱️  Status: $STATUS (${ELAPSED}s elapsed)"
+          echo "⏱️  Attempt $i/$MAX_ATTEMPTS: HTTP $HTTP_CODE"
           
-          if [ "$STATUS" = "Deployed" ]; then
-            echo "✅ CloudFront deployment complete!"
-            
-            # Verify URL is reachable
-            echo "🔍 Verifying CDN URL is reachable..."
-            for i in {1..10}; do
-              if curl -s -o /dev/null -w "%{http_code}" "$CDN_URL" | grep -q "200"; then
-                echo "✅ CDN is reachable and responding!"
-                break
-              elif [ $i -eq 10 ]; then
-                echo "⚠️  CDN deployment complete but not yet fully reachable"
-              else
-                echo "⏳ Attempt $i/10: Waiting for CDN..."
-                sleep 5
-              fi
-            done
-            
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "403" ] || [ "$HTTP_CODE" = "404" ]; then
             echo ""
+            echo "✅ CDN is reachable! (HTTP $HTTP_CODE)"
             echo "🎉 Deployment successful!"
             echo "🌐 CDN URL: $CDN_URL"
             echo "📚 Knowledge Base: $CDN_URL/app.html"
@@ -374,15 +334,14 @@ jobs:
             exit 0
           fi
           
-          sleep $INTERVAL
-          ELAPSED=$((ELAPSED + INTERVAL))
+          sleep 5
         done
         
-        echo "⚠️  Timeout waiting for CloudFront deployment status (20 minutes)"
+        echo "⚠️  Timeout: CDN not reachable after $MAX_ATTEMPTS attempts"
         echo "CDN URL: $CDN_URL"
-        echo "⚠️  CloudFront might still be deploying. The app should be accessible now."
-        echo "🌐 Try accessing: $CDN_URL"
-        exit 0
+        echo "💡 The CDN might still be deploying. Check manually."
+        echo "❌ Deployment may have issues"
+        exit 1
 
   destroy:
     name: Destroy Infrastructure
