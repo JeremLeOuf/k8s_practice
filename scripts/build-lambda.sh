@@ -13,13 +13,13 @@ NC='\033[0m' # No Color
 
 # Function to build a single Lambda function
 build_lambda() {
-    local func_path=$1
-    local func_name=$(basename $func_path)
+    local func_name=$1
+    local ORIGINAL_DIR=$(pwd)
     
     START_TIME=$(date +%s)
     echo -e "${BLUE}Building $func_name...${NC}"
     
-    cd $func_path
+    cd "$ORIGINAL_DIR/$func_name"
     
     # Clean previous build
     rm -f function.zip
@@ -81,35 +81,39 @@ build_lambda() {
     END_TIME=$(date +%s)
     ELAPSED=$((END_TIME - START_TIME))
     echo -e "${GREEN}  ✅ $func_name packaged (${SIZE}) in ${ELAPSED}s${NC}"
+    
+    cd "$ORIGINAL_DIR"
 }
 
 cd lambda-functions
 
 # Build Knowledge Base Lambda functions
 echo -e "${BLUE}📚 Building Knowledge Base Lambda functions...${NC}"
-for func in knowledge-base/get-items knowledge-base/create-item knowledge-base/delete-item; do
-    if [ -d "$func" ]; then
-        build_lambda "$func"
-    fi
-done
+if [ -d "knowledge-base" ]; then
+    cd knowledge-base
+    for func in get-items create-item delete-item; do
+        if [ -d "$func" ]; then
+            build_lambda "$func"
+        fi
+    done
+    cd ..
+fi
 
 # Build Budget Tracker Lambda functions
 echo ""
 echo -e "${BLUE}💰 Building Budget Tracker Lambda functions...${NC}"
-for func in budget-tracker/add-transaction budget-tracker/get-balance budget-tracker/send-alert; do
-    if [ -d "$func" ]; then
-        build_lambda "$func"
-    fi
-done
+if [ -d "budget-tracker" ]; then
+    cd budget-tracker
+    for func in add-transaction get-balance send-alert; do
+        if [ -d "$func" ]; then
+            build_lambda "$func"
+        fi
+    done
+    cd ..
+fi
 
 cd ..
 
 echo ""
 echo -e "${GREEN}🎉 All Lambda functions packaged!${NC}"
-echo ""
-
-# Summary
-echo "Summary:"
-echo "  Knowledge Base: $(find lambda-functions/knowledge-base -name 'function.zip' | wc -l) functions"
-echo "  Budget Tracker: $(find lambda-functions/budget-tracker -name 'function.zip' | wc -l) functions"
 echo ""
