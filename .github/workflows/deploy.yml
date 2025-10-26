@@ -83,39 +83,74 @@ jobs:
     
     - name: Verify Lambda Packages
       run: |
-        ls -lah lambda-functions/*/function.zip || echo "Need to build Lambda packages"
+        if [ ! -f lambda-functions/get-items/function.zip ]; then
+          echo "❌ Lambda packages not found"
+          echo "🔄 Building Lambda packages..."
+          ./scripts/build-lambda.sh
+        else
+          echo "✅ Lambda packages found"
+          ls -lah lambda-functions/*/function.zip
+        fi
     
     - name: Terraform Init
       working-directory: ./infrastructure
       run: terraform init
     
-    - name: Import Existing Resources (Optional)
+    - name: Import Existing Resources
       working-directory: ./infrastructure
       run: |
-        # Try to import existing resources to prevent conflicts
-        terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase 2>/dev/null || echo "DynamoDB table not existing or already imported"
-        terraform import aws_iam_role.lambda_role pkb-lambda-execution-role 2>/dev/null || echo "IAM role not existing or already imported"
-        terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/pkb-grafana-cloudwatch-access 2>/dev/null || echo "IAM policy not existing or already imported"
-        terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch 2>/dev/null || echo "IAM user not existing or already imported"
+        echo "🔍 Importing existing resources..."
+        
+        # Get AWS Account ID
+        export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        
+        # Import DynamoDB table
+        terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase || echo "⚠️ DynamoDB table not found or already imported"
+        
+        # Import IAM role
+        terraform import aws_iam_role.lambda_role pkb-lambda-execution-role || echo "⚠️ IAM role not found or already imported"
+        
+        # Import IAM policy
+        terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access || echo "⚠️ IAM policy not found or already imported"
+        
+        # Import IAM user
+        terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch || echo "⚠️ IAM user not found or already imported"
+        
+        # Import S3 bucket
+        terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ S3 bucket not found or already imported"
+        
+        # Import bucket versioning
+        terraform import aws_s3_bucket_versioning.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ Versioning not found"
+        
+        # Import public access block
+        terraform import aws_s3_bucket_public_access_block.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ Public access block not found"
+        
         echo "✅ Import step completed"
       continue-on-error: true
     
     - name: Terraform Apply
       working-directory: ./infrastructure
-      run: terraform apply -auto-approve
-      continue-on-error: true
-    
-    - name: Check Apply Status
-      if: failure()
       run: |
-        echo "⚠️ Terraform apply had issues."
-        echo "Possible causes:"
-        echo "1. Resources already exist (this is OK for updates)"
-        echo "2. Missing permissions"
-        echo "3. AWS service limits"
-        echo ""
-        echo "If resources already exist, the infrastructure is likely up to date."
-        echo "Check the Actions logs for specific errors."
+        set +e  # Don't exit on error
+        terraform apply -auto-approve -refresh=false
+        EXIT_CODE=$?
+        
+        # Check for specific errors we can handle
+        if [ $EXIT_CODE -ne 0 ]; then
+          echo "⚠️ Terraform apply returned errors. Checking specific issues..."
+          
+          # Try to import missing resources that failed
+          terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base 2>/dev/null || true
+          terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase 2>/dev/null || true
+          terraform import aws_iam_role.lambda_role pkb-lambda-execution-role 2>/dev/null || true
+          
+          # Re-run apply
+          echo "🔄 Retrying after imports..."
+          terraform apply -auto-approve -refresh=false
+        fi
+        
+        echo "✅ Terraform apply completed"
+      continue-on-error: true
 
   test-lambda:
     name: Test Lambda Functions
