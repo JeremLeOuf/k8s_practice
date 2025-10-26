@@ -189,6 +189,27 @@ jobs:
         echo "⏱️ Starting terraform apply at $(date)"
         time terraform apply -auto-approve -refresh=false -parallelism=10
         echo "✅ Completed terraform apply at $(date)"
+    
+    - name: Deploy Frontend to S3
+      working-directory: ./infrastructure
+      run: |
+        echo "🌐 Deploying frontend files to S3..."
+        BUCKET_NAME=$(terraform output -raw frontend_bucket_name)
+        echo "📦 Uploading to: $BUCKET_NAME"
+        
+        aws s3 sync ../frontend/ s3://$BUCKET_NAME/ --delete
+        
+        echo "✨ Frontend files deployed successfully!"
+    
+    - name: Invalidate CloudFront Cache
+      working-directory: ./infrastructure
+      run: |
+        echo "🔄 Invalidating CloudFront cache..."
+        CDN_ID=$(terraform output -raw frontend_cdn_url | cut -d'/' -f3 | cut -d'.' -f1)
+        aws cloudfront create-invalidation --distribution-id $CDN_ID --paths "/*" 2>/dev/null || echo "⚠️ Cache invalidation skipped"
+        
+        CDN_URL=$(terraform output -raw frontend_cdn_url)
+        echo "🌐 Frontend deployed at: https://$CDN_URL"
 
   destroy:
     name: Destroy Infrastructure

@@ -1,0 +1,72 @@
+name: Deploy Grafana to Kubernetes
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly on Sunday
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-grafana:
+    name: Deploy Grafana
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'schedule')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Configure kubectl
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Install kubectl
+      run: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        kubectl version --client
+    
+    - name: Get minikube cluster info
+      run: |
+        echo "📦 Getting minikube cluster configuration..."
+        # Note: This would require minikube running in CI/CD
+        # For production, use EKS cluster config
+        # aws eks update-kubeconfig --name your-cluster --region us-east-1
+    
+    - name: Deploy Grafana
+      run: |
+        echo "🚀 Deploying Grafana to Kubernetes..."
+        kubectl apply -f kubernetes/grafana-deployment.yaml
+        kubectl apply -f kubernetes/grafana-service.yaml
+        
+        echo "⏳ Waiting for Grafana to be ready..."
+        kubectl rollout status deployment/grafana -n grafana --timeout=120s
+    
+    - name: Get Grafana LoadBalancer URL
+      run: |
+        echo "📊 Grafana Service Status:"
+        kubectl get svc -n grafana grafana-service
+        
+        echo ""
+        echo "🌐 To access Grafana:"
+        echo "Run locally: kubectl port-forward -n grafana svc/grafana-service 3000:3000"
+        echo "Then visit: http://localhost:3000"
+        echo ""
+        echo "Username: admin"
+        echo "Password: admin"
+      continue-on-error: true
+
