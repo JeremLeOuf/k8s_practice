@@ -110,7 +110,7 @@ resource "aws_iam_role" "budget_tracker_lambda" {
 
 # Lambda Function: Add Transaction
 resource "aws_lambda_function" "add_transaction" {
-  filename      = "${path.module}/../budget-tracker/lambda-functions/add-transaction/function.zip"
+  filename      = "${path.module}/../lambda-functions/budget-tracker/add-transaction/function.zip"
   function_name = "budget-tracker-add-transaction"
   role          = aws_iam_role.budget_tracker_lambda.arn
   handler       = "lambda_function.handler"
@@ -128,7 +128,7 @@ resource "aws_lambda_function" "add_transaction" {
 
 # Lambda Function: Get Balance
 resource "aws_lambda_function" "get_balance" {
-  filename      = "${path.module}/../budget-tracker/lambda-functions/get-balance/function.zip"
+  filename      = "${path.module}/../lambda-functions/budget-tracker/get-balance/function.zip"
   function_name = "budget-tracker-get-balance"
   role          = aws_iam_role.budget_tracker_lambda.arn
   handler       = "lambda_function.handler"

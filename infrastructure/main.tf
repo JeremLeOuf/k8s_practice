@@ -102,7 +102,7 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
 
 # Lambda Function: Get Items
 resource "aws_lambda_function" "get_items" {
-  filename      = "${path.module}/../lambda-functions/get-items/function.zip"
+  filename      = "${path.module}/../lambda-functions/knowledge-base/get-items/function.zip"
   function_name = "pkb-api-get-items"
   role          = aws_iam_role.lambda_role.arn
   handler       = "lambda_function.handler"
@@ -119,7 +119,7 @@ resource "aws_lambda_function" "get_items" {
 
 # Lambda Function: Create Item
 resource "aws_lambda_function" "create_item" {
-  filename      = "${path.module}/../lambda-functions/create-item/function.zip"
+  filename      = "${path.module}/../lambda-functions/knowledge-base/create-item/function.zip"
   function_name = "pkb-api-create-item"
   role          = aws_iam_role.lambda_role.arn
   handler       = "lambda_function.handler"
@@ -136,7 +136,7 @@ resource "aws_lambda_function" "create_item" {
 
 # Lambda Function: Delete Item
 resource "aws_lambda_function" "delete_item" {
-  filename      = "${path.module}/../lambda-functions/delete-item/function.zip"
+  filename      = "${path.module}/../lambda-functions/knowledge-base/delete-item/function.zip"
   function_name = "pkb-api-delete-item"
   role          = aws_iam_role.lambda_role.arn
   handler       = "lambda_function.handler"
