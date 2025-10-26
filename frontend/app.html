@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Knowledge Base</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .nav-actions {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        
+        .nav-button:hover {
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .api-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .api-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .items-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .item-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .item-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .item-content {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .item-meta {
+            font-size: 0.9em;
+            color: #999;
+            margin-bottom: 15px;
+        }
+
+        .delete-btn {
+            background: #e74c3c;
+            padding: 8px 20px;
+            font-size: 14px;
+        }
+
+        .config-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        #apiUrlInput {
+            font-family: monospace;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Personal Knowledge Base</h1>
+            <p class="subtitle">A serverless API powered by AWS Lambda and API Gateway</p>
+            <div class="nav-actions">
+                <a href="index.html" class="nav-button">🏠 Home</a>
+                <a href="grafana.html" class="nav-button">📊 Grafana</a>
+            </div>
+        </header>
+
+        <div class="config-section">
+            <h2>⚙️ Configuration</h2>
+            <div class="form-group">
+                <label for="apiUrlInput">API Gateway URL:</label>
+                <input type="text" id="apiUrlInput" placeholder="https://your-api-gateway-url.amazonaws.com/prod" />
+                <button onclick="saveApiUrl()" style="margin-top: 10px;">Save URL</button>
+            </div>
+            <p style="margin-top: 15px; color: #666; font-size: 0.9em;">
+                Default URL configured: <code id="defaultApiUrl">https://dfdfpzg3a8.execute-api.us-east-1.amazonaws.com/prod</code>
+            </p>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="api-section">
+            <h2>➕ Create New Item</h2>
+            <form id="createItemForm">
+                <div class="form-group">
+                    <label for="titleInput">Title:</label>
+                    <input type="text" id="titleInput" required />
+                </div>
+                <div class="form-group">
+                    <label for="contentInput">Content:</label>
+                    <textarea id="contentInput" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="typeInput">Type:</label>
+                    <input type="text" id="typeInput" placeholder="note, bookmark, task, etc." value="note" />
+                </div>
+                <button type="submit">Create Item</button>
+            </form>
+        </div>
+
+        <div class="items-container">
+            <h2>📋 Your Items</h2>
+            <button onclick="loadItems()" style="margin-bottom: 20px;">Refresh Items</button>
+            <div id="itemsList">
+                <!-- Items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get API URL from localStorage or default (will be replaced by CI/CD)
+        const DEFAULT_API_URL = '{{API_GATEWAY_URL}}';
+        let apiUrl = localStorage.getItem('apiUrl') || DEFAULT_API_URL;
+        
+        // Set the input field value
+        const apiUrlInput = document.getElementById('apiUrlInput');
+        apiUrlInput.value = apiUrl;
+        
+        // Set the displayed default URL
+        document.getElementById('defaultApiUrl').textContent = DEFAULT_API_URL !== '{{API_GATEWAY_URL}}' ? DEFAULT_API_URL : 'To be configured';
+
+        function saveApiUrl() {
+            apiUrl = document.getElementById('apiUrlInput').value;
+            localStorage.setItem('apiUrl', apiUrl);
+            showAlert('API URL saved!', 'success');
+        }
+
+        function showAlert(message, type = 'success') {
+            const container = document.getElementById('alertContainer');
+            container.innerHTML = `
+                <div class="alert alert-${type}">
+                    ${message}
+                </div>
+            `;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        async function loadItems() {
+            if (!apiUrl) {
+                showAlert('Please set the API Gateway URL first!', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/items`);
+                const data = await response.json();
+                displayItems(data.items || []);
+            } catch (error) {
+                showAlert('Error loading items: ' + error.message, 'error');
+            }
+        }
+
+        function displayItems(items) {
+            const container = document.getElementById('itemsList');
+            if (items.length === 0) {
+                container.innerHTML = '<p>No items yet. Create your first item above!</p>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="item-card">
+                    <div class="item-title">${escapeHtml(item.title)}</div>
+                    <div class="item-content">${escapeHtml(item.content)}</div>
+                    <div class="item-meta">
+                        Type: ${item.type || 'note'} | 
+                        Created: ${new Date(item.created_at).toLocaleString()}
+                    </div>
+                    <button class="delete-btn" onclick="deleteItem('${item.id}')">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteItem(id) {
+            if (!confirm('Are you sure you want to delete this item?')) return;
+
+            try {
+                const response = await fetch(`${apiUrl}/items/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showAlert('Item deleted successfully!', 'success');
+                    loadItems();
+                } else {
+                    const data = await response.json();
+                    showAlert('Error deleting item: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting item: ' + error.message, 'error');
+            }
+        }
+
+        document.getElementById('createItemForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!apiUrl) {
+                showAlert('Please set the API Gateway URL first!', 'error');
+                return;
+            }
+
+            const title = document.getElementById('titleInput').value;
+            const content = document.getElementById('contentInput').value;
+            const type = document.getElementById('typeInput').value;
+
+            try {
+                const response = await fetch(`${apiUrl}/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, content, type })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Item created successfully!', 'success');
+                    document.getElementById('createItemForm').reset();
+                    loadItems();
+                } else {
+                    showAlert('Error creating item: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error creating item: ' + error.message, 'error');
+            }
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load items on page load
+        if (apiUrl) {
+            loadItems();
+        }
+    </script>
+</body>
+</html>
+

@@ -190,6 +190,20 @@ jobs:
         time terraform apply -auto-approve -refresh=false -parallelism=10
         echo "✅ Completed terraform apply at $(date)"
     
+    - name: Configure Frontend with API URL
+      working-directory: ./infrastructure
+      run: |
+        echo "⚙️ Configuring frontend with API Gateway URL..."
+        
+        # Get API Gateway URL from Terraform output
+        API_URL=$(terraform output -raw api_gateway_url)
+        echo "📡 API Gateway URL: $API_URL"
+        
+        # Update app.html with the API Gateway URL
+        sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/app.html
+        
+        echo "✅ Frontend configured with API URL: $API_URL"
+    
     - name: Deploy Frontend to S3
       working-directory: ./infrastructure
       run: |
@@ -209,7 +223,7 @@ jobs:
         aws cloudfront create-invalidation --distribution-id $CDN_ID --paths "/*" 2>/dev/null || echo "⚠️ Cache invalidation skipped"
         
         CDN_URL=$(terraform output -raw frontend_cdn_url)
-        echo "🌐 Frontend deployed at: https://$CDN_URL"
+        echo "🌐 Frontend deployed at: $CDN_URL"
     
     - name: Wait for CloudFront Deployment
       working-directory: ./infrastructure
