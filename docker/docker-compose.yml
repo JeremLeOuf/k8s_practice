@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  get-items:
+    build:
+      context: ../lambda-functions/get-items
+      dockerfile: ../docker/Dockerfile.lambda
+    environment:
+      - AWS_REGION=us-east-1
+      - AWS_EXECUTION_ENV=AWS_Lambda_python3.9
+    ports:
+      - "9001:8080"
+    command: ["lambda_function.handler"]
+  
+  create-item:
+    build:
+      context: ../lambda-functions/create-item
+      dockerfile: ../docker/Dockerfile.lambda
+    environment:
+      - AWS_REGION=us-east-1
+    ports:
+      - "9002:8080"
+    command: ["lambda_function.handler"]
+  
+  delete-item:
+    build:
+      context: ../lambda-functions/delete-item
+      dockerfile: ../docker/Dockerfile.lambda
+    environment:
+      - AWS_REGION=us-east-1
+    ports:
+      - "9003:8080"
+    command: ["lambda_function.handler"]
+

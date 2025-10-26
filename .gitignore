@@ -1,0 +1,55 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!terraform.tfvars.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# AWS
+.aws/
+*.pem
+*.key
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+*.zip
+dist/
+build/
+
+# Secrets
+.env
+secrets/
+*.secret
+
+# Lambda packages
+lambda-functions/**/function.zip
+lambda-functions/**/package.zip
+

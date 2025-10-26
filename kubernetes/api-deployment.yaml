@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pkb-api
+  labels:
+    app: pkb-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pkb-api
+  template:
+    metadata:
+      labels:
+        app: pkb-api
+    spec:
+      containers:
+      - name: get-items
+        image: pkb-get-items:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: AWS_EXECUTION_ENV
+          value: "AWS_Lambda_python3.9"
+      - name: create-item
+        image: pkb-create-item:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+      - name: delete-item
+        image: pkb-delete-item:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+
