@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Budget Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .nav-actions {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        
+        .nav-button:hover {
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .balance-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .balance-amount {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #667eea;
+        }
+
+        .balance-positive {
+            color: #28a745;
+        }
+
+        .balance-negative {
+            color: #dc3545;
+        }
+
+        .transaction-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .transaction-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .transactions-list {
+            margin-top: 30px;
+        }
+
+        .transaction-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .transaction-income {
+            border-left: 4px solid #28a745;
+        }
+
+        .transaction-expense {
+            border-left: 4px solid #dc3545;
+        }
+
+        .transaction-details {
+            flex: 1;
+        }
+
+        .transaction-amount {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .transaction-income .transaction-amount {
+            color: #28a745;
+        }
+
+        .transaction-expense .transaction-amount {
+            color: #dc3545;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .config-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .config-section input {
+            width: calc(100% - 100px);
+            display: inline-block;
+        }
+
+        .config-section button {
+            width: 90px;
+            padding: 12px;
+        }
+
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Personal Budget Tracker</h1>
+            <p class="subtitle">Track your income and expenses with AWS Lambda and DynamoDB</p>
+            <div class="nav-actions">
+                <a href="index.html" class="nav-button">🏠 Home</a>
+                <a href="app.html" class="nav-button">📚 Knowledge Base</a>
+                <a href="grafana.html" class="nav-button">📊 Grafana</a>
+            </div>
+        </header>
+
+        <div id="alertContainer"></div>
+
+        <div class="balance-section" id="balanceSection">
+            <h2>💵 Current Balance</h2>
+            <div class="balance-amount" id="currentBalance">$0.00</div>
+            <button onclick="loadBalance()">Refresh Balance</button>
+        </div>
+
+        <div class="transaction-section">
+            <h2>➕ Add Transaction</h2>
+            <form id="addTransactionForm">
+                <div class="form-group">
+                    <label for="transactionType">Type:</label>
+                    <select id="transactionType" required>
+                        <option value="income">💰 Income</option>
+                        <option value="expense">💸 Expense</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="amountInput">Amount ($):</label>
+                    <input type="number" id="amountInput" step="0.01" required placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                    <label for="categoryInput">Category:</label>
+                    <select id="categoryInput">
+                        <option value="food">🍽️ Food</option>
+                        <option value="transport">🚗 Transport</option>
+                        <option value="shopping">🛍️ Shopping</option>
+                        <option value="bills">📄 Bills</option>
+                        <option value="entertainment">🎉 Entertainment</option>
+                        <option value="salary">💼 Salary</option>
+                        <option value="freelance">💻 Freelance</option>
+                        <option value="other">📦 Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="descriptionInput">Description:</label>
+                    <input type="text" id="descriptionInput" placeholder="Enter a description" />
+                </div>
+                <button type="submit">Add Transaction</button>
+            </form>
+        </div>
+
+        <div class="transaction-section">
+            <h2>📋 Recent Transactions</h2>
+            <button onclick="loadBalance()" style="margin-bottom: 20px;">Refresh Transactions</button>
+            <div id="transactionsList" class="transactions-list">
+                <div class="loading">Loading transactions...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API URLs (to be configured)
+        const BUDGET_API_URL = 'https://YOUR-BUDGET-API.execute-api.us-east-1.amazonaws.com/prod';
+
+        // Load balance and transactions on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBalance();
+        });
+
+        // Add transaction form handler
+        document.getElementById('addTransactionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            addTransaction();
+        });
+
+        function addTransaction() {
+            const type = document.getElementById('transactionType').value;
+            const amount = parseFloat(document.getElementById('amountInput').value);
+            const category = document.getElementById('categoryInput').value;
+            const description = document.getElementById('descriptionInput').value;
+
+            if (!amount || amount <= 0) {
+                showAlert('Please enter a valid amount', 'error');
+                return;
+            }
+
+            const data = {
+                amount: amount,
+                type: type,
+                category: category,
+                description: description
+            };
+
+            fetch(`${BUDGET_API_URL}/transactions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.transaction_id) {
+                    showAlert(`Transaction added! New balance: $${result.balance.toFixed(2)}`, 'success');
+                    clearForm();
+                    loadBalance();
+                } else {
+                    showAlert('Failed to add transaction', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('Error adding transaction: ' + error.message, 'error');
+            });
+        }
+
+        function loadBalance() {
+            fetch(`${BUDGET_API_URL}/balance`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.balance !== undefined) {
+                        updateBalance(data.balance);
+                        displayTransactions(data.transactions || []);
+                    } else {
+                        showAlert('Failed to load balance', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showAlert('Error loading balance: ' + error.message, 'error');
+                });
+        }
+
+        function updateBalance(balance) {
+            const balanceElement = document.getElementById('currentBalance');
+            balanceElement.textContent = `$${balance.toFixed(2)}`;
+            
+            if (balance >= 0) {
+                balanceElement.className = 'balance-amount balance-positive';
+            } else {
+                balanceElement.className = 'balance-amount balance-negative';
+            }
+        }
+
+        function displayTransactions(transactions) {
+            const container = document.getElementById('transactionsList');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<div class="loading">No transactions yet. Add your first transaction above!</div>';
+                return;
+            }
+
+            container.innerHTML = transactions.map(trans => {
+                const cssClass = trans.type === 'income' ? 'transaction-income' : 'transaction-expense';
+                const symbol = trans.type === 'income' ? '+' : '-';
+                const icon = trans.type === 'income' ? '💰' : '💸';
+                
+                return `
+                    <div class="transaction-item ${cssClass}">
+                        <div class="transaction-details">
+                            <div><strong>${icon} ${trans.category}</strong> - ${trans.description || 'No description'}</div>
+                            <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                                ${new Date(trans.timestamp).toLocaleString()}
+                            </div>
+                        </div>
+                        <div class="transaction-amount">
+                            ${symbol}$${trans.amount.toFixed(2)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearForm() {
+            document.getElementById('addTransactionForm').reset();
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
+

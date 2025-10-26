@@ -139,6 +139,13 @@ jobs:
         ./scripts/cleanup-old-cloudfront.sh || echo "⚠️ Cleanup failed, continuing..."
       continue-on-error: true
 
+    - name: Ensure CloudFront is Enabled
+      run: |
+        echo "✅ Ensuring CloudFront distribution is enabled..."
+        chmod +x scripts/ensure-cloudfront-enabled.sh
+        ./scripts/ensure-cloudfront-enabled.sh || echo "⚠️ Enable check failed, continuing..."
+      continue-on-error: true
+
     - name: Terraform Init
       working-directory: ./infrastructure
       run: terraform init

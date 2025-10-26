@@ -361,7 +361,15 @@ resource "aws_api_gateway_deployment" "api" {
     aws_api_gateway_method.options_items,
     aws_api_gateway_integration.options_items,
     aws_api_gateway_method.options_item,
-    aws_api_gateway_integration.options_item
+    aws_api_gateway_integration.options_item,
+    aws_api_gateway_method.add_transaction,
+    aws_api_gateway_integration.add_transaction,
+    aws_api_gateway_method.get_balance,
+    aws_api_gateway_integration.get_balance,
+    aws_api_gateway_method.options_transactions,
+    aws_api_gateway_integration.options_transactions,
+    aws_api_gateway_method.options_balance,
+    aws_api_gateway_integration.options_balance
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id

@@ -143,6 +143,170 @@ resource "aws_lambda_function" "get_balance" {
   }
 }
 
+# Lambda Permissions for API Gateway
+resource "aws_lambda_permission" "api_gateway_add_transaction" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.add_transaction.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "api_gateway_get_balance" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.get_balance.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+}
+
+# API Gateway Resources for Budget Tracker
+resource "aws_api_gateway_resource" "budget_transactions" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "transactions"
+}
+
+resource "aws_api_gateway_resource" "budget_balance" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "balance"
+}
+
+# API Gateway: POST /transactions
+resource "aws_api_gateway_method" "add_transaction" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.budget_transactions.id
+  http_method   = "POST"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "add_transaction" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.budget_transactions.id
+  http_method = aws_api_gateway_method.add_transaction.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.add_transaction.invoke_arn
+}
+
+# API Gateway: GET /balance
+resource "aws_api_gateway_method" "get_balance" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.budget_balance.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "get_balance" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.budget_balance.id
+  http_method = aws_api_gateway_method.get_balance.http_method
+
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.get_balance.invoke_arn
+}
+
+# CORS: OPTIONS for /transactions
+resource "aws_api_gateway_method" "options_transactions" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.budget_transactions.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options_transactions" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.budget_transactions.id
+  http_method = aws_api_gateway_method.options_transactions.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_transactions" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.budget_transactions.id
+  http_method = aws_api_gateway_method.options_transactions.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_transactions" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.budget_transactions.id
+  http_method = aws_api_gateway_method.options_transactions.http_method
+  status_code = aws_api_gateway_method_response.options_transactions.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.options_transactions
+  ]
+}
+
+# CORS: OPTIONS for /balance
+resource "aws_api_gateway_method" "options_balance" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.budget_balance.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "options_balance" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.budget_balance.id
+  http_method = aws_api_gateway_method.options_balance.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "options_balance" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.budget_balance.id
+  http_method = aws_api_gateway_method.options_balance.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Headers" = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "options_balance" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  resource_id = aws_api_gateway_resource.budget_balance.id
+  http_method = aws_api_gateway_method.options_balance.http_method
+  status_code = aws_api_gateway_method_response.options_balance.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.options_balance
+  ]
+}
+
 # Outputs
 output "budget_tracker_table_name" {
   value = aws_dynamodb_table.budget_tracker.name
@@ -150,5 +314,15 @@ output "budget_tracker_table_name" {
 
 output "budget_alerts_topic_arn" {
   value = aws_sns_topic.budget_alerts.arn
+}
+
+output "budget_tracker_api_url" {
+  description = "The Budget Tracker API URL"
+  value       = "${aws_api_gateway_stage.prod.invoke_url}/transactions"
+}
+
+output "budget_balance_api_url" {
+  description = "The Budget Balance API URL"
+  value       = "${aws_api_gateway_stage.prod.invoke_url}/balance"
 }
 
