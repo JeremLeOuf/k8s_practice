@@ -20,6 +20,9 @@ This folder contains documentation for Infrastructure as Code (Terraform) and CI
 - **[CI_CD_FIXES.md](./CI_CD_FIXES.md)** - Previous CI/CD fixes
 - **[CI_CD_FIXES_SUMMARY.md](./CI_CD_FIXES_SUMMARY.md)** - Summary of all fixes
 
+### ⚡ Performance
+- **[CI_CD_PERFORMANCE.md](./CI_CD_PERFORMANCE.md)** - Optimize deployment speed
+
 ### 🗑️ Cleanup
 - **[TERRAFORM_DESTROY_FIX.md](./TERRAFORM_DESTROY_FIX.md)** - S3 bucket emptying
 
@@ -86,6 +89,7 @@ Jobs:
 
 - [CI/CD Setup](./CI_CD_SETUP.md)
 - [Best Practices](./CI_CD_BEST_PRACTICES.md)
+- [Performance Optimization](./CI_CD_PERFORMANCE.md)
 - [AWS Free Tier](./AWS_FREE_TIER.md)
 - [Fix Summary](./CI_CD_FIXES_SUMMARY.md)
 

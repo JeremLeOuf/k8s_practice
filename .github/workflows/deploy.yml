@@ -41,11 +41,15 @@ jobs:
       with:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
     
-    - name: Build Lambda Functions
-      run: |
-        chmod +x scripts/build-lambda.sh
-        ./scripts/build-lambda.sh || echo "Build skipped"
-      continue-on-error: true
+    - name: Cache Terraform
+      uses: actions/cache@v3
+      with:
+        path: |
+          infrastructure/.terraform
+          infrastructure/.terraform.lock.hcl
+        key: terraform-${{ runner.os }}-${{ hashFiles('infrastructure/**/*.tf') }}
+        restore-keys: |
+          terraform-${{ runner.os }}-
     
     - name: Terraform Init
       working-directory: ./infrastructure
@@ -62,12 +66,13 @@ jobs:
     
     - name: Terraform Plan
       working-directory: ./infrastructure
-      run: terraform plan -out=tfplan -detailed-exitcode
+      run: terraform plan -detailed-exitcode
       continue-on-error: true
 
   deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
+    needs: [validate]
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy')
@@ -88,41 +93,58 @@ jobs:
       with:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
     
+    - name: Cache Lambda Packages
+      uses: actions/cache@v3
+      id: lambda-cache
+      with:
+        path: |
+          lambda-functions/*/function.zip
+        key: lambda-${{ runner.os }}-${{ hashFiles('lambda-functions/**/*.py', 'lambda-functions/**/requirements.txt') }}
+    
     - name: Build Lambda Functions
+      if: steps.lambda-cache.outputs.cache-hit != 'true'
       run: |
         chmod +x scripts/build-lambda.sh
         ./scripts/build-lambda.sh
     
     - name: Verify Lambda Packages
       run: |
-        if [ ! -f lambda-functions/get-items/function.zip ]; then
-          echo "❌ Lambda packages not found"
-          echo "🔄 Building Lambda packages..."
-          ./scripts/build-lambda.sh
-        else
-          echo "✅ Lambda packages found"
-          ls -lah lambda-functions/*/function.zip
-        fi
+        ls -lah lambda-functions/*/function.zip
+        echo "✅ Lambda packages ready"
+    
+    - name: Cache Terraform
+      uses: actions/cache@v3
+      with:
+        path: |
+          infrastructure/.terraform
+          infrastructure/.terraform.lock.hcl
+        key: terraform-${{ runner.os }}-${{ hashFiles('infrastructure/**/*.tf') }}
+        restore-keys: |
+          terraform-${{ runner.os }}-
     
     - name: Terraform Init
       working-directory: ./infrastructure
       run: terraform init
     
-    - name: Import Existing Resources
+    - name: Import Existing Resources (Skip if in state)
       working-directory: ./infrastructure
       run: |
-        echo "🔍 Importing existing resources..."
+        echo "🔍 Checking existing resources..."
         export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-        terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase || echo "⚠️ Already imported"
-        terraform import aws_iam_role.lambda_role pkb-lambda-execution-role || echo "⚠️ Already imported"
-        terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access || echo "⚠️ Already imported"
-        terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch || echo "⚠️ Already imported"
-        terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ Already imported"
+        
+        # Only import if not already in state
+        terraform state show aws_dynamodb_table.knowledge_base &>/dev/null || terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_iam_role.lambda_role &>/dev/null || terraform import aws_iam_role.lambda_role pkb-lambda-execution-role 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_iam_policy.grafana_cloudwatch_access &>/dev/null || terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_iam_user.grafana_cloudwatch &>/dev/null || terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_s3_bucket.frontend &>/dev/null || terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base 2>/dev/null || echo "⚠️ Skipped"
+        
+        echo "✅ Import check completed"
       continue-on-error: true
     
-    - name: Terraform Apply
+    - name: Terraform Apply (No Refresh)
       working-directory: ./infrastructure
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve -refresh=false
 
   destroy:
     name: Destroy Infrastructure
