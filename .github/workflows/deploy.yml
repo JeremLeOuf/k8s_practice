@@ -219,10 +219,18 @@ jobs:
       working-directory: ./infrastructure
       run: |
         echo "🔄 Invalidating CloudFront cache..."
-        CDN_ID=$(terraform output -raw frontend_cdn_url | cut -d'/' -f3 | cut -d'.' -f1)
-        aws cloudfront create-invalidation --distribution-id $CDN_ID --paths "/*" 2>/dev/null || echo "⚠️ Cache invalidation skipped"
-        
         CDN_URL=$(terraform output -raw frontend_cdn_url)
+        
+        # Extract distribution ID from CDN URL
+        CDN_DOMAIN=$(echo $CDN_URL | sed 's|https://||')
+        CDN_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='$CDN_DOMAIN'].Id" --output text 2>/dev/null || echo "")
+        
+        if [ ! -z "$CDN_ID" ]; then
+          aws cloudfront create-invalidation --distribution-id $CDN_ID --paths "/*" 2>/dev/null || echo "⚠️ Cache invalidation skipped"
+        else
+          echo "⚠️ Could not find CloudFront distribution"
+        fi
+        
         echo "🌐 Frontend deployed at: $CDN_URL"
     
     - name: Wait for CloudFront Deployment
@@ -232,18 +240,23 @@ jobs:
         
         # Get CloudFront distribution ID and URL
         CDN_URL=$(terraform output -raw frontend_cdn_url)
+        CDN_DOMAIN=$(echo $CDN_URL | sed 's|https://||')
         
-        # Extract distribution ID from CDN URL (format: https://d12345.cloudfront.net)
-        DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='$CDN_URL'].Id" --output text 2>/dev/null || echo "")
+        # Extract distribution ID from CDN domain (e.g., d12345.cloudfront.net)
+        echo "🔍 Looking for distribution with domain: $CDN_DOMAIN"
+        DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='$CDN_DOMAIN'].Id" --output text 2>/dev/null || echo "")
         
         if [ -z "$DIST_ID" ]; then
           echo "⚠️  Could not find CloudFront distribution ID"
-          echo "🌐 CDN URL: https://$CDN_URL"
+          echo "🌐 CDN URL: $CDN_URL"
+          echo "🌐 Looking for domain: $CDN_DOMAIN"
+          echo "💡 Listing all distributions:"
+          aws cloudfront list-distributions --query "DistributionList.Items[*].[Id,DomainName,Status]" --output table
           echo "⚠️  Proceeding anyway - CDN may still be deploying"
           exit 0
         fi
         
-        echo "🔍 Monitoring distribution: $DIST_ID"
+        echo "✅ Found distribution: $DIST_ID"
         
         # Wait for deployment to complete (max 20 minutes instead of 30)
         TIMEOUT=1200
@@ -261,7 +274,7 @@ jobs:
             # Verify URL is reachable
             echo "🔍 Verifying CDN URL is reachable..."
             for i in {1..10}; do
-              if curl -s -o /dev/null -w "%{http_code}" "https://$CDN_URL" | grep -q "200"; then
+              if curl -s -o /dev/null -w "%{http_code}" "$CDN_URL" | grep -q "200"; then
                 echo "✅ CDN is reachable and responding!"
                 break
               elif [ $i -eq 10 ]; then
@@ -274,9 +287,9 @@ jobs:
             
             echo ""
             echo "🎉 Deployment successful!"
-            echo "🌐 CDN URL: https://$CDN_URL"
-            echo "📚 Knowledge Base: https://$CDN_URL/app.html"
-            echo "📊 Grafana: https://$CDN_URL/grafana.html"
+            echo "🌐 CDN URL: $CDN_URL"
+            echo "📚 Knowledge Base: $CDN_URL/app.html"
+            echo "📊 Grafana: $CDN_URL/grafana.html"
             exit 0
           fi
           
@@ -285,9 +298,9 @@ jobs:
         done
         
         echo "⚠️  Timeout waiting for CloudFront deployment status (20 minutes)"
-        echo "CDN URL: https://$CDN_URL"
+        echo "CDN URL: $CDN_URL"
         echo "⚠️  CloudFront might still be deploying. The app should be accessible now."
-        echo "🌐 Try accessing: https://$CDN_URL"
+        echo "🌐 Try accessing: $CDN_URL"
         exit 0
 
   destroy:
