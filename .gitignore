@@ -63,3 +63,5 @@ lambda-functions/*/six.py
 lambda-functions/*/six-*.dist-info/
 lambda-functions/*/*.dist-info/
 lambda-functions/*/*.zip
+*.lock
+lambda-functions/*/bin/
