@@ -1,160 +1,174 @@
-# 📚 Personal Knowledge Base - Serverless Application
+# 📚 Personal Knowledge Base - Serverless Learning Project
 
-A complete serverless application with **backend API** (Lambda + API Gateway + DynamoDB) and **frontend UI** (S3 + CloudFront).
+A comprehensive serverless application project designed for learning AWS, Terraform, Kubernetes (k9s), and Grafana monitoring.
 
-## 📖 Documentation
+## 🎯 Learning Paths
 
-### Backend / Serverless Infrastructure
-- **[SERVERLESS_APP_README.md](./SERVERLESS_APP_README.md)** - API, Lambda, Infrastructure docs
-- [QUICKSTART.md](./QUICKSTART.md) - Quick deployment guide
-- [AWS_FREE_TIER.md](./AWS_FREE_TIER.md) - Free tier optimization
+This project is organized by learning topic. Choose your path:
 
-### Frontend / UI
-- **[UI_README.md](./UI_README.md)** - S3 + CloudFront deployment guide
-- Static HTML/CSS/JS interface
-- Pre-configured with API endpoint
+### 🚀 [Serverless Backend](./docs/serverless/)
+- **AWS Lambda** - Serverless functions
+- **API Gateway** - REST API
+- **DynamoDB** - NoSQL database
+- **Terraform IaC** - Infrastructure as Code
 
-### Kubernetes / K9s Learning
-- **[START_HERE.md](./START_HERE.md)** - K9s learning path
-- **[K9S_LEARNING_GUIDE.md](./K9S_LEARNING_GUIDE.md)** - Comprehensive k9s tutorial
-- **[K9S_QUICKSTART.md](./K9S_QUICKSTART.md)** - Quick start with k9s
+**Start Here:** [`docs/serverless/SERVERLESS_APP_README.md`](./docs/serverless/SERVERLESS_APP_README.md)
 
-### Project Documentation
-- **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - Architecture overview
-- [AWS_FREE_TIER.md](./AWS_FREE_TIER.md) - Cost optimization guide
+### 🌐 [Static Frontend](./docs/frontend/)
+- **S3** - Static website hosting
+- **CloudFront** - CDN and caching
+- **Modern UI** - HTML/CSS/JavaScript
 
-## 🚀 Quick Start
+**Start Here:** [`docs/frontend/UI_README.md`](./docs/frontend/UI_README.md)
 
-### Deploy Backend (API)
+### ☸️ [Kubernetes & k9s](./docs/kubernetes/)
+- **Minikube** - Local Kubernetes cluster
+- **k9s** - Terminal UI for Kubernetes
+- **Container Orchestration** - Deploy and manage
 
-```bash
-# Build and deploy Lambda functions
-./scripts/build-lambda.sh
-cd infrastructure
-terraform apply
-```
+**Start Here:** [`docs/kubernetes/START_HERE.md`](./docs/kubernetes/START_HERE.md)
 
-### Deploy Frontend (UI)
+### 📊 [Grafana Monitoring](./docs/grafana/)
+- **Grafana** - Visualization platform
+- **CloudWatch** - AWS metrics
+- **Dashboards** - Monitor Lambda functions
 
-```bash
-# Deploy to S3 + CloudFront
-./scripts/deploy-frontend.sh
+**Start Here:** [`docs/grafana/GRAFANA_QUICKSTART.md`](./docs/grafana/GRAFANA_QUICKSTART.md)
 
-# Get CloudFront URL
-cd infrastructure
-terraform output frontend_url
-```
+### 🔧 [Terraform & CI/CD](./docs/terraform/)
+- **Infrastructure as Code** - Manage AWS resources
+- **GitHub Actions** - Automated deployments
+- **Best Practices** - Production-ready patterns
 
-## 🏗️ Architecture
-
-```
-┌─────────────────────┐
-│   Frontend UI       │
-│   (CloudFront CDN)  │
-│   https://xxx.net  │
-└──────────┬──────────┘
-           │ HTTPS
-           ↓
-┌─────────────────────┐
-│   API Gateway       │
-│   (REST API)        │
-└──────────┬──────────┘
-           │
-           ↓
-┌─────────────────────┐
-│   Lambda Functions  │
-│   (Python 3.9)      │
-│   - get-items       │
-│   - create-item     │
-│   - delete-item     │
-└──────────┬──────────┘
-           │
-           ↓
-┌─────────────────────┐
-│   DynamoDB          │
-│   (NoSQL Database)  │
-└─────────────────────┘
-```
+**Start Here:** [`docs/terraform/CI_CD_SETUP.md`](./docs/terraform/CI_CD_SETUP.md)
 
 ## 📁 Project Structure
 
 ```
 serverless_app/
-├── README.md                    # This file
+├── README.md                       # This file - navigation hub
 │
-├── BACKEND / API
-│   ├── SERVERLESS_APP_README.md # Backend documentation
-│   ├── infrastructure/          # Terraform config
-│   └── lambda-functions/        # Lambda code
-│       ├── get-items/
-│       ├── create-item/
-│       └── delete-item/
+├── 📂 Code & Infrastructure
+│   ├── infrastructure/            # Terraform configuration
+│   ├── lambda-functions/          # Lambda function code
+│   ├── frontend/                  # Static website files
+│   ├── docker/                    # Docker configurations
+│   └── kubernetes/                # K8s manifests
 │
-├── FRONTEND / UI
-│   ├── UI_README.md             # Frontend documentation
-│   ├── frontend/                # Static HTML files
-│   └── scripts/deploy-frontend.sh
+├── 📂 Scripts
+│   └── scripts/                   # Automation scripts
 │
-├── KUBERNETES / K9S
-│   ├── START_HERE.md            # K9s starter
-│   ├── K9S_LEARNING_GUIDE.md   # K9s tutorial
-│   ├── K9S_QUICKSTART.md       # Quick start
-│   ├── kubernetes/              # K8s manifests
-│   └── scripts/setup-k9s.sh
-│
-└── DOCUMENTATION
-    ├── QUICKSTART.md
-    ├── PROJECT_SUMMARY.md
-    ├── AWS_FREE_TIER.md
-    └── *.md files
+└── 📂 Documentation
+    └── docs/
+        ├── serverless/            # Backend/API docs
+        ├── frontend/              # Frontend docs
+        ├── kubernetes/            # k9s learning docs
+        ├── grafana/               # Monitoring docs
+        ├── terraform/             # IaC & CI/CD docs
+        └── aws/                   # AWS-specific docs
 ```
 
-## 🎯 What You Can Do
+## 🚀 Quick Start
 
-### Backend
-- ✅ Deploy serverless API to AWS
-- ✅ Manage Lambda functions with Terraform
-- ✅ Use DynamoDB for data storage
-- ✅ Learn Infrastructure as Code
+### 1. Deploy Backend (API)
 
-### Frontend
-- ✅ Deploy static website to S3
-- ✅ Use CloudFront CDN
-- ✅ Interact with API from browser
-- ✅ Modern, responsive UI
+```bash
+# Build Lambda functions
+./scripts/build-lambda.sh
 
-### Kubernetes
-- ✅ Learn k9s (terminal UI for K8s)
-- ✅ Deploy with Minikube
-- ✅ Practice container orchestration
-- ✅ Monitor with k9s
+# Deploy infrastructure
+cd infrastructure
+terraform apply
+```
+
+**Learn More:** [`docs/serverless/SERVERLESS_APP_README.md`](./docs/serverless/SERVERLESS_APP_README.md)
+
+### 2. Deploy Frontend (UI)
+
+```bash
+# Deploy to S3 and CloudFront
+./scripts/deploy-frontend.sh
+
+# Get the URL
+cd infrastructure
+terraform output frontend_url
+```
+
+**Learn More:** [`docs/frontend/UI_README.md`](./docs/frontend/UI_README.md)
+
+### 3. Learn Kubernetes (k9s)
+
+```bash
+# Setup minikube and k9s
+./scripts/setup-k9s.sh
+
+# Launch k9s
+./scripts/k9s-quickstart.sh
+```
+
+**Learn More:** [`docs/kubernetes/START_HERE.md`](./docs/kubernetes/START_HERE.md)
+
+### 4. Monitor with Grafana
+
+```bash
+# Setup Grafana
+cd grafana
+./setup-grafana.sh
+```
+
+**Learn More:** [`docs/grafana/GRAFANA_QUICKSTART.md`](./docs/grafana/GRAFANA_QUICKSTART.md)
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────┐
+│   Frontend UI           │
+│   (CloudFront CDN)      │
+└───────────┬─────────────┘
+            │ HTTPS
+            ↓
+┌─────────────────────────┐
+│   API Gateway           │
+│   (REST API)            │
+└───────────┬─────────────┘
+            │
+            ↓
+┌─────────────────────────┐
+│   Lambda Functions      │
+│   (Python 3.9)          │
+│   - get-items           │
+│   - create-item         │
+│   - delete-item         │
+└───────────┬─────────────┘
+            │
+            ↓
+┌─────────────────────────┐
+│   DynamoDB              │
+│   (NoSQL Database)      │
+└─────────────────────────┘
+```
 
 ## 🛠️ Technologies
 
-### AWS Services
-- **Lambda** - Serverless functions
-- **API Gateway** - REST API
-- **DynamoDB** - NoSQL database
-- **S3** - Static website hosting
-- **CloudFront** - CDN and caching
+### Cloud Services
+- **AWS Lambda** - Serverless computing
+- **API Gateway** - REST API management
+- **DynamoDB** - Managed NoSQL database
+- **S3** - Object storage
+- **CloudFront** - Content delivery network
+- **CloudWatch** - Monitoring and logging
 
-### Infrastructure
-- **Terraform** - IaC
+### Infrastructure & DevOps
+- **Terraform** - Infrastructure as Code
+- **GitHub Actions** - CI/CD pipeline
 - **Docker** - Containerization
-- **Kubernetes** - Orchestration
+- **Kubernetes** - Container orchestration
 
 ### Tools
-- **k9s** - K8s terminal UI
-- **Minikube** - Local K8s cluster
-- **Git** - Version control
-
-## 📝 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/items` | List all items |
-| POST | `/items` | Create new item |
-| DELETE | `/items/{id}` | Delete item |
+- **k9s** - Kubernetes terminal UI
+- **Minikube** - Local Kubernetes
+- **Grafana** - Observability platform
+- **uv** - Fast Python package manager
 
 ## 💰 Cost
 
@@ -165,110 +179,131 @@ serverless_app/
 - S3: 5GB storage
 - CloudFront: 1TB transfer
 
-## 🚀 Quick Deploy
+**Learn More:** [`docs/terraform/AWS_FREE_TIER.md`](./docs/terraform/AWS_FREE_TIER.md)
 
-### Option 1: Full Stack
+## 📚 Learning Resources
 
-```bash
-# Backend
-./scripts/build-lambda.sh
-cd infrastructure && terraform apply
+### 📖 Documentation by Topic
 
-# Frontend
-./scripts/deploy-frontend.sh
+#### Serverless Backend
+- [Main Guide](./docs/serverless/SERVERLESS_APP_README.md) - Complete backend documentation
+- [Local Testing](./docs/serverless/LOCAL_TESTING.md) - Test Lambda locally
+- [uv Integration](./docs/serverless/UV_README.md) - Fast dependency management
 
-# Get URLs
-terraform output
-```
+#### Frontend
+- [UI Guide](./docs/frontend/UI_README.md) - S3 + CloudFront deployment
 
-### Option 2: Backend Only
+#### Kubernetes
+- [Start Here](./docs/kubernetes/START_HERE.md) - k9s learning path
+- [k9s Tutorial](./docs/kubernetes/K9S_LEARNING_GUIDE.md) - Comprehensive guide
+- [Quick Start](./docs/kubernetes/K9S_QUICKSTART.md) - Get started quickly
 
-```bash
-cd infrastructure
-terraform apply
-terraform output api_gateway_url
-```
+#### Grafana
+- [Quick Start](./docs/grafana/GRAFANA_QUICKSTART.md) - Setup Grafana
+- [Setup Guide](./docs/grafana/GRAFANA_SETUP.md) - Detailed instructions
+- [Troubleshooting](./docs/grafana/TROUBLESHOOT.md) - Common issues
 
-### Option 3: Frontend Only
+#### Terraform & CI/CD
+- [CI/CD Setup](./docs/terraform/CI_CD_SETUP.md) - GitHub Actions
+- [Best Practices](./docs/terraform/CI_CD_BEST_PRACTICES.md) - Production patterns
+- [Destroy Fix](./docs/terraform/TERRAFORM_DESTROY_FIX.md) - S3 bucket cleanup
 
-```bash
-./scripts/deploy-frontend.sh
-```
+### 📋 General Documentation
+- [Quick Start](./docs/QUICKSTART.md) - Overall quick start
+- [Project Summary](./docs/PROJECT_SUMMARY.md) - Architecture overview
+- [Deployment Summary](./docs/DEPLOYMENT_SUMMARY.md) - Deployment details
+- [SysOps Roadmap](./docs/SYSOP_ROADMAP.md) - Career path
 
-## 📚 Learning Path
+## 🎯 What You'll Learn
 
-### Week 1: Backend
-1. Read `SERVERLESS_APP_README.md`
-2. Deploy Lambda functions
-3. Test API endpoints
-4. Learn Terraform basics
+### Cloud Services
+- ✅ Deploy serverless applications with AWS
+- ✅ Design REST APIs with API Gateway
+- ✅ Use DynamoDB for data persistence
+- ✅ Serve static websites with S3 + CloudFront
+- ✅ Monitor with CloudWatch and Grafana
 
-### Week 2: Frontend
-1. Read `UI_README.md`
-2. Deploy to S3 + CloudFront
-3. Test UI in browser
-4. Customize interface
+### Infrastructure as Code
+- ✅ Write Terraform configurations
+- ✅ Manage infrastructure lifecycles
+- ✅ Handle existing resources gracefully
+- ✅ Set up CI/CD pipelines
 
-### Week 3: Kubernetes
-1. Read `START_HERE.md`
-2. Install minikube and k9s
-3. Deploy to K8s
+### Container Orchestration
+- ✅ Use Kubernetes (k9s) for management
+- ✅ Deploy with Minikube locally
+- ✅ Containerize applications with Docker
+- ✅ Practice production operations
+
+### DevOps Practices
+- ✅ Automate deployments with GitHub Actions
+- ✅ Manage dependencies efficiently
+- ✅ Monitor applications in production
+- ✅ Follow best practices
+
+## 🚦 Getting Started
+
+### For AWS/Serverless Learning
+1. Read [`docs/serverless/SERVERLESS_APP_README.md`](./docs/serverless/SERVERLESS_APP_README.md)
+2. Deploy backend infrastructure
+3. Test Lambda functions
+4. Move to frontend deployment
+
+### For Kubernetes Learning
+1. Read [`docs/kubernetes/START_HERE.md`](./docs/kubernetes/START_HERE.md)
+2. Setup minikube and k9s
+3. Deploy to Kubernetes
 4. Practice with k9s
 
-## 🆘 Need Help?
+### For Monitoring
+1. Read [`docs/grafana/GRAFANA_QUICKSTART.md`](./docs/grafana/GRAFANA_QUICKSTART.md)
+2. Setup Grafana
+3. Configure CloudWatch datasource
+4. Create dashboards
 
-### Backend Issues
-- See `SERVERLESS_APP_README.md`
-- Check `infrastructure/` for Terraform config
-- Review CloudWatch logs
+### For DevOps/CI/CD
+1. Read [`docs/terraform/CI_CD_SETUP.md`](./docs/terraform/CI_CD_SETUP.md)
+2. Configure GitHub Actions
+3. Set up AWS credentials
+4. Trigger automated deployments
 
-### Frontend Issues
-- See `UI_README.md`
-- Check `frontend/` for HTML files
-- Verify CloudFront distribution
+## 📝 API Endpoints
 
-### K9s Issues
-- See `K9S_LEARNING_GUIDE.md`
-- Check `kubernetes/` manifests
-- Review minikube status
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/items` | List all knowledge base items |
+| POST | `/items` | Create a new item |
+| DELETE | `/items/{id}` | Delete an item by ID |
+
+**Base URL:** Get from `terraform output api_gateway_url`
+
+## 🆘 Troubleshooting
+
+- **Backend Issues** → [`docs/serverless/SERVERLESS_APP_README.md`](./docs/serverless/SERVERLESS_APP_README.md)
+- **Frontend Issues** → [`docs/frontend/UI_README.md`](./docs/frontend/UI_README.md)
+- **k9s Issues** → [`docs/kubernetes/K9S_LEARNING_GUIDE.md`](./docs/kubernetes/K9S_LEARNING_GUIDE.md)
+- **Grafana Issues** → [`docs/grafana/TROUBLESHOOT.md`](./docs/grafana/TROUBLESHOOT.md)
+- **Terraform Issues** → [`docs/terraform/CI_CD_BEST_PRACTICES.md`](./docs/terraform/CI_CD_BEST_PRACTICES.md)
 
 ## 🎉 Features
 
-- ✅ **Serverless Backend** - Lambda + API Gateway + DynamoDB
-- ✅ **Static Frontend** - S3 + CloudFront
-- ✅ **Infrastructure as Code** - Terraform
+- ✅ **Complete Serverless Stack** - Lambda + API Gateway + DynamoDB
+- ✅ **Static Frontend** - S3 + CloudFront CDN
+- ✅ **Infrastructure as Code** - Fully automated with Terraform
+- ✅ **CI/CD Pipeline** - GitHub Actions integration
 - ✅ **Container Support** - Docker + Kubernetes
+- ✅ **Monitoring** - Grafana + CloudWatch
 - ✅ **Free Tier** - AWS cost optimization
-- ✅ **Complete Docs** - Separate backend/frontend guides
+- ✅ **Well Documented** - Organized learning paths
 
 ## 📖 Next Steps
 
-1. **Read Documentation**
-   - `SERVERLESS_APP_README.md` for backend
-   - `UI_README.md` for frontend
-
-2. **Deploy Application**
-   ```bash
-   ./scripts/build-lambda.sh
-   cd infrastructure && terraform apply
-   ./scripts/deploy-frontend.sh
-   ```
-
-3. **Learn K9s**
-   - Read `START_HERE.md`
-   - Install minikube and k9s
-   - Deploy and practice
-
-## 🔗 Links
-
-- [Backend Documentation](./SERVERLESS_APP_README.md)
-- [Frontend Documentation](./UI_README.md)
-- [K9s Learning Guide](./K9S_LEARNING_GUIDE.md)
-- [Quick Start Guide](./QUICKSTART.md)
+1. **Choose your learning path** from the sections above
+2. **Read the relevant documentation** in the `docs/` folder
+3. **Deploy and practice** with the provided scripts
+4. **Explore advanced topics** as you progress
 
 ---
 
-**Ready to start?** Pick a path:
-- 🎯 **Backend**: Read `SERVERLESS_APP_README.md`
-- 🌐 **Frontend**: Read `UI_README.md`
-- 🎓 **K9s**: Read `START_HERE.md`
+**Ready to start?** Pick a learning path above and dive in! 🚀
+
