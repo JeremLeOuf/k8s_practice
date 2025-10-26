@@ -1,22 +1,19 @@
-version: '3.8'
-
 services:
   grafana:
     image: grafana/grafana:latest
     container_name: pkb-grafana
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=grafana-cloudwatch-datasource
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_SERVER_PROTOCOL=http
+      - GF_INSTALL_PLUGINS=
     volumes:
       - grafana-storage:/var/lib/grafana
-      - ./provisioning:/etc/grafana/provisioning
-      - ./dashboards:/var/lib/grafana/dashboards
+      - ./provisioning:/etc/grafana/provisioning:ro
     networks:
       - monitoring
 
