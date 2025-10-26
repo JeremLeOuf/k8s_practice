@@ -183,16 +183,29 @@ jobs:
         terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base || true
       continue-on-error: true
     
-    - name: Empty S3 Bucket
-      working-directory: ./infrastructure
+    - name: Cleanup AWS Resources
+      working-directory: .
       run: |
         BUCKET=$(terraform output -raw frontend_bucket_name 2>/dev/null || echo "pkb-frontend-personal-knowledge-base")
-        echo "🗑️ Emptying S3 bucket: $BUCKET"
-        aws s3 rm "s3://$BUCKET" --recursive || echo "Bucket already empty"
+        ./scripts/cleanup-aws-resources.sh "$BUCKET"
+      continue-on-error: true
     
     - name: Terraform Destroy
       working-directory: ./infrastructure
       run: terraform destroy -auto-approve
+      continue-on-error: true
+    
+    - name: Force Cleanup (if needed)
+      if: failure()
+      run: |
+        echo "🧹 Force cleaning remaining resources..."
+        export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        
+        # Try to delete policy manually
+        aws iam delete-policy --policy-arn "arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access" 2>/dev/null || echo "Policy already deleted"
+        
+        # Try to delete user manually
+        aws iam delete-user --user-name pkb-grafana-cloudwatch 2>/dev/null || echo "User already deleted"
 
   notify:
     name: Notify Deployment

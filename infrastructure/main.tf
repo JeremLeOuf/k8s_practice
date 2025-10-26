@@ -68,6 +68,10 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
   name = "lambda-dynamodb-policy"
   role = aws_iam_role.lambda_role.id
 
+  lifecycle {
+    create_before_destroy = false
+  }
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

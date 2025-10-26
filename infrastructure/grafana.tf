@@ -48,6 +48,11 @@ resource "aws_iam_user" "grafana_cloudwatch" {
 resource "aws_iam_user_policy_attachment" "grafana_cloudwatch" {
   user       = aws_iam_user.grafana_cloudwatch.name
   policy_arn = aws_iam_policy.grafana_cloudwatch_access.arn
+
+  # Ensure this is deleted before the policy and user
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 output "grafana_access_key_instructions" {
