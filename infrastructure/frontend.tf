@@ -130,11 +130,13 @@ resource "aws_cloudfront_distribution" "frontend" {
       enabled,
       is_ipv6_enabled
     ]
+    create_before_destroy = true
   }
 
   tags = {
     Name        = "Personal Knowledge Base Frontend"
     Environment = var.environment
+    Project     = var.project_name
   }
 }
 

@@ -132,6 +132,13 @@ jobs:
         restore-keys: |
           terraform-${{ runner.os }}-
     
+    - name: Cleanup Old CloudFront Distributions
+      run: |
+        echo "🧹 Cleaning up old CloudFront distributions..."
+        chmod +x scripts/cleanup-old-cloudfront.sh
+        ./scripts/cleanup-old-cloudfront.sh || echo "⚠️ Cleanup failed, continuing..."
+      continue-on-error: true
+
     - name: Terraform Init
       working-directory: ./infrastructure
       run: terraform init
