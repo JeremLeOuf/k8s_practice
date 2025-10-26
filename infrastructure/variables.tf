@@ -16,3 +16,9 @@ variable "project_name" {
   default     = "personal-knowledge-base"
 }
 
+variable "alert_email" {
+  description = "Email address for budget alerts"
+  type        = string
+  default     = "your-email@example.com"
+}
+
