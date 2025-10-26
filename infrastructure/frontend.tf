@@ -162,6 +162,20 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 }
 
+# Empty bucket before destroying (runs during terraform destroy)
+resource "null_resource" "empty_s3_bucket" {
+  depends_on = [aws_cloudfront_distribution.frontend]
+
+  triggers = {
+    bucket_id = aws_s3_bucket.frontend.id
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "aws s3 rm s3://${self.triggers.bucket_id} --recursive || true"
+  }
+}
+
 # Outputs
 output "frontend_bucket_name" {
   value = aws_s3_bucket.frontend.bucket
