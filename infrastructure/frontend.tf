@@ -44,11 +44,6 @@ resource "aws_s3_bucket_website_configuration" "frontend" {
   }
 }
 
-# CloudFront Origin Access Identity
-resource "aws_cloudfront_origin_access_identity" "frontend" {
-  comment = "OAI for Personal Knowledge Base Frontend"
-}
-
 # S3 Bucket Policy for CloudFront
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
@@ -66,6 +61,15 @@ resource "aws_s3_bucket_policy" "frontend" {
       }
     ]
   })
+
+  lifecycle {
+    create_before_destroy = false
+  }
+}
+
+# CloudFront Origin Access Identity
+resource "aws_cloudfront_origin_access_identity" "frontend" {
+  comment = "OAI for Personal Knowledge Base Frontend"
 }
 
 # CloudFront Distribution
@@ -85,9 +89,12 @@ resource "aws_cloudfront_distribution" "frontend" {
   is_ipv6_enabled      = true
   default_root_object  = "index.html"
   comment              = "Personal Knowledge Base Frontend"
+  
+  # Wait for deployment (faster than auto, but still takes ~15min first time)
+  wait_for_deployment = false
 
   default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "S3-${aws_s3_bucket.frontend.bucket}"
 
@@ -100,50 +107,9 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
-    compress               = true
-  }
-
-  # Cache behavior for static assets
-  ordered_cache_behavior {
-    path_pattern     = "*.css"
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "S3-${aws_s3_bucket.frontend.bucket}"
-
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 86400
-    max_ttl                = 31536000
-    compress               = true
-  }
-
-  ordered_cache_behavior {
-    path_pattern     = "*.js"
-    allowed_methods  = ["GET", "HEAD"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "S3-${aws_s3_bucket.frontend.bucket}"
-
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 86400
-    max_ttl                = 31536000
-    compress               = true
+    default_ttl            = 0      # No caching for faster updates
+    max_ttl                = 0
+    compress               = false  # Disable compression to speed up
   }
 
   restrictions {
@@ -155,6 +121,16 @@ resource "aws_cloudfront_distribution" "frontend" {
   viewer_certificate {
     cloudfront_default_certificate = true
   }
+  
+  # Disable logging to speed up deployments
+  # Don't wait for deployment to complete
+  lifecycle {
+    ignore_changes = [
+      comment,
+      enabled,
+      is_ipv6_enabled
+    ]
+  }
 
   tags = {
     Name        = "Personal Knowledge Base Frontend"
@@ -164,7 +140,12 @@ resource "aws_cloudfront_distribution" "frontend" {
 
 # Empty bucket before destroying (runs during terraform destroy)
 resource "null_resource" "empty_s3_bucket" {
-  depends_on = [aws_cloudfront_distribution.frontend]
+  depends_on = [
+    aws_cloudfront_distribution.frontend,
+    aws_s3_bucket_policy.frontend,
+    aws_s3_bucket_versioning.frontend,
+    aws_s3_bucket_public_access_block.frontend
+  ]
 
   triggers = {
     bucket_id = aws_s3_bucket.frontend.id
@@ -172,7 +153,33 @@ resource "null_resource" "empty_s3_bucket" {
 
   provisioner "local-exec" {
     when    = destroy
-    command = "aws s3 rm s3://${self.triggers.bucket_id} --recursive || true"
+    command = <<-EOT
+      set -e
+      BUCKET="${self.triggers.bucket_id}"
+      
+      echo "🗑️ Emptying S3 bucket: $BUCKET (all versions)..."
+      
+      # Delete all versions and markers
+      aws s3api list-object-versions \
+        --bucket "$BUCKET" \
+        --output json \
+        --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' > /tmp/delete-versions.json 2>/dev/null || echo '{"Objects":[]}' > /tmp/delete-versions.json
+      
+      [ -s /tmp/delete-versions.json ] && aws s3api delete-objects --bucket "$BUCKET" --delete file:///tmp/delete-versions.json || true
+      
+      # Delete markers
+      aws s3api list-object-versions \
+        --bucket "$BUCKET" \
+        --output json \
+        --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' > /tmp/delete-markers.json 2>/dev/null || echo '{"Objects":[]}' > /tmp/delete-markers.json
+      
+      [ -s /tmp/delete-markers.json ] && aws s3api delete-objects --bucket "$BUCKET" --delete file:///tmp/delete-markers.json || true
+      
+      # Finally delete remaining objects
+      aws s3 rm "s3://$BUCKET" --recursive || true
+      
+      echo "✅ Bucket emptied"
+    EOT
   }
 }
 
