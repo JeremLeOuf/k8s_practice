@@ -267,6 +267,9 @@ jobs:
         # Update app.html with the API Gateway URL
         sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/app.html
         
+        # Update budget.html with the API Gateway URL
+        sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/budget.html
+        
         echo "✅ Frontend configured with API URL: $API_URL"
     
     - name: Deploy Frontend to S3

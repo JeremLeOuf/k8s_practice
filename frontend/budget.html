@@ -299,8 +299,10 @@
     </div>
 
     <script>
-        // API URLs (to be configured)
-        const BUDGET_API_URL = 'https://YOUR-BUDGET-API.execute-api.us-east-1.amazonaws.com/prod';
+        // Get API URL from parent API Gateway
+        // The budget tracker uses the same API Gateway as the knowledge base
+        const API_BASE_URL = '{{API_GATEWAY_URL}}';
+        const BUDGET_API_URL = API_BASE_URL;
 
         // Load balance and transactions on page load
         document.addEventListener('DOMContentLoaded', function() {
