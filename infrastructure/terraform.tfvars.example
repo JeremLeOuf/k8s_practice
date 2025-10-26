@@ -1,0 +1,5 @@
+# Copy this file to terraform.tfvars and customize it
+aws_region = "us-east-1"
+environment = "dev"
+project_name = "personal-knowledge-base"
+
