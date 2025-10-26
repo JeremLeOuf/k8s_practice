@@ -203,14 +203,52 @@ jobs:
         terraform plan -refresh=false
       continue-on-error: true
     
+    - name: Terraform Plan (for optimization checks)
+      working-directory: ./infrastructure
+      run: |
+        echo "📋 Running terraform plan for optimization checks..."
+        terraform plan -out=tfplan -refresh=false -parallelism=10 > plan.txt 2>&1 || true
+        cat plan.txt
+        
+        # Check if CloudFront will be created (not just updated)
+        if grep -q "aws_cloudfront_distribution.frontend will be created" plan.txt; then
+          echo "🆕 New CloudFront distribution detected"
+          echo "NEW_CLOUDFRONT=true" >> $GITHUB_ENV
+        else
+          echo "✅ CloudFront will be updated (not created)"
+          echo "NEW_CLOUDFRONT=false" >> $GITHUB_ENV
+        fi
+      continue-on-error: true
+
     - name: Terraform Apply (No Refresh)
       working-directory: ./infrastructure
       run: |
         echo "⏱️ Starting terraform apply at $(date)"
-        time terraform apply -auto-approve -refresh=false -parallelism=10
+        if [ -f tfplan ]; then
+          time terraform apply tfplan
+          rm -f plan.txt
+        else
+          time terraform apply -auto-approve -refresh=false -parallelism=10
+        fi
         echo "✅ Completed terraform apply at $(date)"
     
+    - name: Check if Frontend Changed
+      run: |
+        # Check if this is the first commit or if frontend changed
+        if [ "$(git rev-list --count HEAD)" -eq 1 ]; then
+          echo "🆕 First commit - deploying frontend"
+          echo "FRONTEND_CHANGED=true" >> $GITHUB_ENV
+        elif git diff HEAD~1 HEAD --name-only | grep -q "frontend/"; then
+          echo "📝 Frontend files changed"
+          echo "FRONTEND_CHANGED=true" >> $GITHUB_ENV
+        else
+          echo "✅ Frontend files unchanged"
+          echo "FRONTEND_CHANGED=false" >> $GITHUB_ENV
+        fi
+      continue-on-error: true
+
     - name: Configure Frontend with API URL
+      if: env.FRONTEND_CHANGED == 'true' || github.event_name == 'workflow_dispatch'
       working-directory: ./infrastructure
       run: |
         echo "⚙️ Configuring frontend with API Gateway URL..."
@@ -225,6 +263,7 @@ jobs:
         echo "✅ Frontend configured with API URL: $API_URL"
     
     - name: Deploy Frontend to S3
+      if: env.FRONTEND_CHANGED == 'true' || github.event_name == 'workflow_dispatch'
       working-directory: ./infrastructure
       run: |
         echo "🌐 Deploying frontend files to S3..."
@@ -236,6 +275,7 @@ jobs:
         echo "✨ Frontend files deployed successfully!"
     
     - name: Invalidate CloudFront Cache
+      if: env.FRONTEND_CHANGED == 'true' || github.event_name == 'workflow_dispatch'
       working-directory: ./infrastructure
       run: |
         echo "🔄 Invalidating CloudFront cache..."
@@ -253,10 +293,26 @@ jobs:
         
         echo "🌐 Frontend deployed at: $CDN_URL"
     
+    - name: Skip Frontend Deployment (No Changes)
+      if: env.FRONTEND_CHANGED == 'false'
+      run: |
+        echo "⏭️  Frontend files unchanged - skipping deployment"
+        echo "✅ Previous frontend deployment remains active"
+    
     - name: Wait for CloudFront Deployment
+      if: env.NEW_CLOUDFRONT == 'true' || env.NEW_CLOUDFRONT == ''
       working-directory: ./infrastructure
       run: |
         echo "⏳ Waiting for CloudFront to be fully deployed..."
+        
+        # If updating existing CloudFront, wait only 2 minutes
+        if [ "$NEW_CLOUDFRONT" = "false" ]; then
+          echo "✅ CloudFront update detected - using short wait (2 minutes)"
+          TIMEOUT=120
+        else
+          echo "🆕 New CloudFront detected - using full wait (20 minutes)"
+          TIMEOUT=1200
+        fi
         
         # Get CloudFront distribution ID and URL
         CDN_URL=$(terraform output -raw frontend_cdn_url)
@@ -278,10 +334,15 @@ jobs:
         
         echo "✅ Found distribution: $DIST_ID"
         
-        # Wait for deployment to complete (max 20 minutes instead of 30)
-        TIMEOUT=1200
+        # Set timeout based on whether it's new or update
+        if [ "$NEW_CLOUDFRONT" = "false" ]; then
+          echo "💡 This is an update - using 2-minute timeout"
+        else
+          echo "💡 This is a new distribution - using 20-minute timeout"
+        fi
+        
         ELAPSED=0
-        INTERVAL=30
+        INTERVAL=15  # Check every 15 seconds
         
         while [ $ELAPSED -lt $TIMEOUT ]; do
           STATUS=$(aws cloudfront get-distribution --id $DIST_ID --query 'Distribution.Status' --output text 2>/dev/null || echo "Unknown")
