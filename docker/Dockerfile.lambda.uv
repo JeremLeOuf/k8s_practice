@@ -1,0 +1,22 @@
+# Multi-stage build with uv for faster Python dependency installation
+FROM ghcr.io/astral-sh/uv:python3.9-bookworm AS uv
+
+WORKDIR /build
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install dependencies using uv
+RUN uv pip install --system -r requirements.txt
+
+# Copy Lambda function
+COPY lambda_function.py .
+
+# Use AWS Lambda Python runtime
+FROM public.ecr.aws/lambda/python:3.9
+
+# Copy dependencies and function from uv stage
+COPY --from=uv /usr/local /var/task
+
+CMD [ "lambda_function.handler" ]
+
