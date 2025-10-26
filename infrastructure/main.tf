@@ -369,7 +369,9 @@ resource "aws_api_gateway_deployment" "api" {
     aws_api_gateway_method.options_transactions,
     aws_api_gateway_integration.options_transactions,
     aws_api_gateway_method.options_balance,
-    aws_api_gateway_integration.options_balance
+    aws_api_gateway_integration.options_balance,
+    aws_api_gateway_gateway_response.cors,
+    aws_api_gateway_gateway_response.cors_5xx
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id
@@ -377,7 +379,9 @@ resource "aws_api_gateway_deployment" "api" {
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_resource.items.id,
-      aws_api_gateway_resource.item.id
+      aws_api_gateway_resource.item.id,
+      aws_api_gateway_gateway_response.cors.id,
+      aws_api_gateway_gateway_response.cors_5xx.id
     ]))
   }
 
@@ -391,6 +395,37 @@ resource "aws_api_gateway_stage" "prod" {
   deployment_id = aws_api_gateway_deployment.api.id
   rest_api_id   = aws_api_gateway_rest_api.api.id
   stage_name    = "prod"
+}
+
+# CORS Gateway Response for better CORS handling
+resource "aws_api_gateway_gateway_response" "cors" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  response_type = "DEFAULT_4XX"
+
+  response_templates = {
+    "application/json" = "{\"message\": $context.error.messageString}"
+  }
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,DELETE,OPTIONS'"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "cors_5xx" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  response_type = "DEFAULT_5XX"
+
+  response_templates = {
+    "application/json" = "{\"message\": $context.error.messageString}"
+  }
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,DELETE,OPTIONS'"
+  }
 }
 
 # Outputs defined in outputs.tf
