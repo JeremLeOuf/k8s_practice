@@ -1,7 +1,7 @@
 # S3 Bucket for Static Website Hosting
 resource "aws_s3_bucket" "frontend" {
   bucket = "pkb-frontend-${var.project_name}"
-  
+
   tags = {
     Name        = "Personal Knowledge Base Frontend"
     Environment = var.environment
@@ -15,7 +15,7 @@ resource "aws_s3_bucket" "frontend" {
 # S3 Bucket Versioning
 resource "aws_s3_bucket_versioning" "frontend" {
   bucket = aws_s3_bucket.frontend.id
-  
+
   versioning_configuration {
     status = "Enabled"
   }
@@ -86,10 +86,10 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   enabled             = true
-  is_ipv6_enabled      = true
-  default_root_object  = "index.html"
-  comment              = "Personal Knowledge Base Frontend"
-  
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+  comment             = "Personal Knowledge Base Frontend"
+
   # Wait for deployment (faster than auto, but still takes ~15min first time)
   wait_for_deployment = false
 
@@ -107,9 +107,9 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 0      # No caching for faster updates
+    default_ttl            = 0 # No caching for faster updates
     max_ttl                = 0
-    compress               = false  # Disable compression to speed up
+    compress               = false # Disable compression to speed up
   }
 
   restrictions {
@@ -121,7 +121,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   viewer_certificate {
     cloudfront_default_certificate = true
   }
-  
+
   # Disable logging to speed up deployments
   # Don't wait for deployment to complete
   lifecycle {

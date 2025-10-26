@@ -1,13 +1,13 @@
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
   }
-  
+
   # Backend configuration - uncomment and configure for remote state
   # backend "s3" {
   #   bucket = "your-terraform-state-bucket"
@@ -22,9 +22,9 @@ provider "aws" {
 
 # DynamoDB Table (Free Tier: 25GB storage, 25 RCU/WCU free per month)
 resource "aws_dynamodb_table" "knowledge_base" {
-  name           = "PersonalKnowledgeBase"
-  billing_mode   = "PAY_PER_REQUEST"  # On-demand, no capacity planning needed
-  hash_key       = "id"
+  name         = "PersonalKnowledgeBase"
+  billing_mode = "PAY_PER_REQUEST" # On-demand, no capacity planning needed
+  hash_key     = "id"
 
   attribute {
     name = "id"
@@ -104,11 +104,11 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
 resource "aws_lambda_function" "get_items" {
   filename         = "${path.module}/../lambda-functions/get-items/function.zip"
   function_name    = "pkb-api-get-items"
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.handler"
-  runtime         = "python3.9"
-  memory_size     = 128  # Free Tier: 512MB free per month
-  timeout          = 3    # Free Tier: 1M requests/month free
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.handler"
+  runtime          = "python3.9"
+  memory_size      = 128 # Free Tier: 512MB free per month
+  timeout          = 3   # Free Tier: 1M requests/month free
   source_code_hash = fileexists("${path.module}/../lambda-functions/get-items/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/get-items/function.zip") : null
 
   environment {
@@ -126,11 +126,11 @@ resource "aws_lambda_function" "get_items" {
 resource "aws_lambda_function" "create_item" {
   filename         = "${path.module}/../lambda-functions/create-item/function.zip"
   function_name    = "pkb-api-create-item"
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.handler"
-  runtime         = "python3.9"
-  memory_size     = 128  # Free Tier: 512MB free per month
-  timeout          = 3    # Free Tier: 1M requests/month free
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.handler"
+  runtime          = "python3.9"
+  memory_size      = 128 # Free Tier: 512MB free per month
+  timeout          = 3   # Free Tier: 1M requests/month free
   source_code_hash = fileexists("${path.module}/../lambda-functions/create-item/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/create-item/function.zip") : null
 
   environment {
@@ -148,11 +148,11 @@ resource "aws_lambda_function" "create_item" {
 resource "aws_lambda_function" "delete_item" {
   filename         = "${path.module}/../lambda-functions/delete-item/function.zip"
   function_name    = "pkb-api-delete-item"
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.handler"
-  runtime         = "python3.9"
-  memory_size     = 128  # Free Tier: 512MB free per month
-  timeout          = 3    # Free Tier: 1M requests/month free
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.handler"
+  runtime          = "python3.9"
+  memory_size      = 128 # Free Tier: 512MB free per month
+  timeout          = 3   # Free Tier: 1M requests/month free
   source_code_hash = fileexists("${path.module}/../lambda-functions/delete-item/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/delete-item/function.zip") : null
 
   environment {
@@ -278,8 +278,8 @@ resource "aws_api_gateway_integration" "options_items" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   resource_id = aws_api_gateway_resource.items.id
   http_method = aws_api_gateway_method.options_items.http_method
-  type = "MOCK"
-  
+  type        = "MOCK"
+
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
@@ -290,7 +290,7 @@ resource "aws_api_gateway_method_response" "options_items" {
   resource_id = aws_api_gateway_resource.items.id
   http_method = aws_api_gateway_method.options_items.http_method
   status_code = "200"
-  
+
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = true
     "method.response.header.Access-Control-Allow-Methods" = true
@@ -303,7 +303,7 @@ resource "aws_api_gateway_integration_response" "options_items" {
   resource_id = aws_api_gateway_resource.items.id
   http_method = aws_api_gateway_method.options_items.http_method
   status_code = aws_api_gateway_method_response.options_items.status_code
-  
+
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS'"
@@ -323,8 +323,8 @@ resource "aws_api_gateway_integration" "options_item" {
   rest_api_id = aws_api_gateway_rest_api.api.id
   resource_id = aws_api_gateway_resource.item.id
   http_method = aws_api_gateway_method.options_item.http_method
-  type = "MOCK"
-  
+  type        = "MOCK"
+
   request_templates = {
     "application/json" = "{\"statusCode\": 200}"
   }
@@ -335,7 +335,7 @@ resource "aws_api_gateway_method_response" "options_item" {
   resource_id = aws_api_gateway_resource.item.id
   http_method = aws_api_gateway_method.options_item.http_method
   status_code = "200"
-  
+
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = true
     "method.response.header.Access-Control-Allow-Methods" = true
@@ -348,7 +348,7 @@ resource "aws_api_gateway_integration_response" "options_item" {
   resource_id = aws_api_gateway_resource.item.id
   http_method = aws_api_gateway_method.options_item.http_method
   status_code = aws_api_gateway_method_response.options_item.status_code
-  
+
   response_parameters = {
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
     "method.response.header.Access-Control-Allow-Methods" = "'DELETE,OPTIONS'"
@@ -372,7 +372,7 @@ resource "aws_api_gateway_deployment" "api" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  
+
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_resource.items.id,

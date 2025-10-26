@@ -1,8 +1,8 @@
 # DynamoDB Table for Budget Tracker
 resource "aws_dynamodb_table" "budget_tracker" {
-  name           = "BudgetTracker"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "id"
+  name         = "BudgetTracker"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
 
   attribute {
     name = "id"
@@ -32,7 +32,7 @@ resource "aws_dynamodb_table" "budget_tracker" {
 # SNS Topic for Budget Alerts
 resource "aws_sns_topic" "budget_alerts" {
   name = "budget-alerts"
-  
+
   tags = {
     Name        = "Budget Alerts"
     Environment = var.environment
@@ -109,13 +109,13 @@ resource "aws_iam_role" "budget_tracker_lambda" {
 
 # Lambda Function: Add Transaction
 resource "aws_lambda_function" "add_transaction" {
-  filename         = "${path.module}/../budget-tracker/lambda-functions/add-transaction/function.zip"
-  function_name    = "budget-tracker-add-transaction"
-  role             = aws_iam_role.budget_tracker_lambda.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.9"
-  memory_size      = 128
-  timeout          = 10
+  filename      = "${path.module}/../budget-tracker/lambda-functions/add-transaction/function.zip"
+  function_name = "budget-tracker-add-transaction"
+  role          = aws_iam_role.budget_tracker_lambda.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.9"
+  memory_size   = 128
+  timeout       = 10
 
   environment {
     variables = {
@@ -131,13 +131,13 @@ resource "aws_lambda_function" "add_transaction" {
 
 # Lambda Function: Get Balance
 resource "aws_lambda_function" "get_balance" {
-  filename         = "${path.module}/../budget-tracker/lambda-functions/get-balance/function.zip"
-  function_name    = "budget-tracker-get-balance"
-  role             = aws_iam_role.budget_tracker_lambda.arn
-  handler         = "lambda_function.handler"
-  runtime          = "python3.9"
-  memory_size      = 128
-  timeout          = 10
+  filename      = "${path.module}/../budget-tracker/lambda-functions/get-balance/function.zip"
+  function_name = "budget-tracker-get-balance"
+  role          = aws_iam_role.budget_tracker_lambda.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.9"
+  memory_size   = 128
+  timeout       = 10
 
   environment {
     variables = {
