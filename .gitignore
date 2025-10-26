@@ -52,7 +52,11 @@ secrets/
 # Lambda packages
 lambda-functions/**/function.zip
 lambda-functions/**/package.zip
+lambda-functions/*/package/
+budget-tracker/lambda-functions/*/function.zip
+budget-tracker/lambda-functions/*/package/
 
+# Build directories
 lambda-functions/*/botocore/
 lambda-functions/*/boto3/
 lambda-functions/*/dateutil/
@@ -65,3 +69,9 @@ lambda-functions/*/*.dist-info/
 lambda-functions/*/*.zip
 *.lock
 lambda-functions/*/bin/
+
+# Terraform state
+infrastructure/.terraform/
+infrastructure/.terraform.lock.hcl
+infrastructure/terraform.tfstate*
+infrastructure/*.tfvars

@@ -140,9 +140,20 @@
             </p>
         </div>
         
-        <a href="http://localhost:3000" target="_blank" class="button" style="margin-top: 20px;">
-            🔗 Open Grafana Dashboard
-        </a>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+            <a href="http://localhost:3000" target="_blank" class="button">
+                🔗 Local Grafana (via kubectl)
+            </a>
+            <a href="https://aws.amazon.com/grafana/" target="_blank" class="button" style="background: linear-gradient(135deg, #FF9900 0%, #FF6600 100%);">
+                ☁️ AWS Managed Grafana
+            </a>
+            <a href="https://grafana.com/products/cloud/" target="_blank" class="button" style="background: linear-gradient(135deg, #F46800 0%, #E9400A 100%);">
+                📊 Grafana Cloud (Free Tier)
+            </a>
+        </div>
+        <p style="margin-top: 20px; color: #888; font-size: 0.9em;">
+            💡 <strong>Tip:</strong> AWS Managed Grafana integrates natively with CloudWatch and can be embedded in your CDN app!
+        </p>
     </div>
     
     <script>

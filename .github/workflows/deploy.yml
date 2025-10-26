@@ -20,6 +20,11 @@ env:
   AWS_REGION: us-east-1
   TERRAFORM_VERSION: latest
 
+# Cancel in-progress runs when a new commit is pushed
+concurrency:
+  group: serverless-app
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate Infrastructure
