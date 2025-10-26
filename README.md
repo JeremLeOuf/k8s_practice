@@ -86,15 +86,22 @@ terraform apply
 ### 2. Deploy Frontend (UI)
 
 ```bash
-# Deploy to S3 and CloudFront
+# Fast deployment (S3 only, ~1 minute) - Default
 ./scripts/deploy-frontend.sh
 
-# Get the URL
+# Or enable CloudFront for production (takes 10-15 minutes)
 cd infrastructure
+terraform apply -var="enable_cloudfront=true"
+
+# Get the URL
 terraform output frontend_url
 ```
 
-**Learn More:** [`docs/frontend/UI_README.md`](./docs/frontend/UI_README.md)
+**⚡ Tip:** For faster development, CloudFront is disabled by default. Enable it only for production.
+
+**Learn More:** 
+- [`docs/frontend/UI_README.md`](./docs/frontend/UI_README.md)
+- [`docs/terraform/FAST_DEPLOYMENT.md`](./docs/terraform/FAST_DEPLOYMENT.md)
 
 ### 3. Learn Kubernetes (k9s)
 
@@ -206,6 +213,7 @@ cd grafana
 #### Terraform & CI/CD
 - [CI/CD Setup](./docs/terraform/CI_CD_SETUP.md) - GitHub Actions
 - [Best Practices](./docs/terraform/CI_CD_BEST_PRACTICES.md) - Production patterns
+- [Fast Deployment](./docs/terraform/FAST_DEPLOYMENT.md) - Skip CloudFront for speed
 - [Destroy Fix](./docs/terraform/TERRAFORM_DESTROY_FIX.md) - S3 bucket cleanup
 
 ### 📋 General Documentation
