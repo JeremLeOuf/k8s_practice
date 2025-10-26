@@ -46,7 +46,7 @@ resource "aws_sns_topic_subscription" "budget_alerts_email" {
   endpoint  = var.alert_email
 }
 
-# IAM Policy for Lambda to access DynamoDB and SNS
+# IAM Policy for Budget Tracker Lambda to access DynamoDB and SNS
 resource "aws_iam_role_policy" "budget_tracker_lambda" {
   name = "budget-tracker-lambda-policy"
   role = aws_iam_role.budget_tracker_lambda.id
@@ -79,6 +79,10 @@ resource "aws_iam_role_policy" "budget_tracker_lambda" {
       }
     ]
   })
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # IAM Role for Budget Tracker Lambda
@@ -97,6 +101,10 @@ resource "aws_iam_role" "budget_tracker_lambda" {
       }
     ]
   })
+
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 # Lambda Function: Add Transaction
@@ -111,7 +119,7 @@ resource "aws_lambda_function" "add_transaction" {
 
   environment {
     variables = {
-      TABLE_NAME   = aws_dynamodb_table.budget_tracker.name
+      TABLE_NAME    = aws_dynamodb_table.budget_tracker.name
       SNS_TOPIC_ARN = aws_sns_topic.budget_alerts.arn
     }
   }
@@ -126,7 +134,7 @@ resource "aws_lambda_function" "get_balance" {
   filename         = "${path.module}/../budget-tracker/lambda-functions/get-balance/function.zip"
   function_name    = "budget-tracker-get-balance"
   role             = aws_iam_role.budget_tracker_lambda.arn
-  handler          = "lambda_function.handler"
+  handler         = "lambda_function.handler"
   runtime          = "python3.9"
   memory_size      = 128
   timeout          = 10
