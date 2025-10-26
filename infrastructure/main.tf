@@ -388,16 +388,5 @@ resource "aws_api_gateway_stage" "prod" {
   stage_name    = "prod"
 }
 
-# Outputs
-output "api_url" {
-  value = "${aws_api_gateway_stage.prod.invoke_url}/items"
-}
-
-output "api_gateway_url" {
-  value = aws_api_gateway_stage.prod.invoke_url
-}
-
-output "dynamodb_table_name" {
-  value = aws_dynamodb_table.knowledge_base.name
-}
+# Outputs defined in outputs.tf
 

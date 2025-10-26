@@ -1,6 +1,18 @@
+# API URLs
+output "api_url" {
+  description = "The API Gateway URL for items endpoint"
+  value       = "${aws_api_gateway_stage.prod.invoke_url}/items"
+}
+
 output "api_gateway_url" {
-  description = "The API Gateway URL"
-  value       = aws_api_gateway_deployment.api.invoke_url
+  description = "The API Gateway base URL"
+  value       = aws_api_gateway_stage.prod.invoke_url
+}
+
+# Database
+output "dynamodb_table_name" {
+  description = "The name of the DynamoDB table"
+  value       = aws_dynamodb_table.knowledge_base.name
 }
 
 output "dynamodb_table_arn" {
@@ -8,6 +20,7 @@ output "dynamodb_table_arn" {
   value       = aws_dynamodb_table.knowledge_base.arn
 }
 
+# Lambda Functions
 output "lambda_function_names" {
   description = "Names of the Lambda functions"
   value = {
