@@ -8,20 +8,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
-      - GF_SERVER_PROTOCOL=http
-      - GF_INSTALL_PLUGINS=
-    volumes:
-      - grafana-storage:/var/lib/grafana
-      - ./provisioning:/etc/grafana/provisioning:ro
-    networks:
-      - monitoring
 
 volumes:
   grafana-storage:
     driver: local
-
-networks:
-  monitoring:
-    driver: bridge
-
