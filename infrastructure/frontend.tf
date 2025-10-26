@@ -21,14 +21,19 @@ resource "aws_s3_bucket_versioning" "frontend" {
   }
 }
 
-# S3 Bucket Public Access Block
+# S3 Bucket Public Access Block (allow public access when not using CloudFront)
 resource "aws_s3_bucket_public_access_block" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
+  block_public_acls       = var.enable_cloudfront
+  block_public_policy     = var.enable_cloudfront
+  ignore_public_acls      = var.enable_cloudfront
+  restrict_public_buckets = var.enable_cloudfront
+
+  lifecycle {
+    # Don't delete this if switching between CloudFront and S3-only modes
+    prevent_destroy = false
+  }
 }
 
 # S3 Bucket Website Configuration
@@ -44,20 +49,38 @@ resource "aws_s3_bucket_website_configuration" "frontend" {
   }
 }
 
-# S3 Bucket Policy for CloudFront
+# CloudFront Origin Access Identity
+resource "aws_cloudfront_origin_access_identity" "frontend" {
+  count   = var.enable_cloudfront ? 1 : 0
+  comment = "OAI for Personal Knowledge Base Frontend"
+}
+
+# S3 Bucket Policy (conditional based on CloudFront usage)
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
-  policy = jsonencode({
+  # Use CloudFront OAI policy if enabled, otherwise public read policy
+  policy = var.enable_cloudfront ? jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${aws_cloudfront_origin_access_identity.frontend.id}"
+          AWS = "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${aws_cloudfront_origin_access_identity.frontend[0].id}"
         }
         Action   = "s3:GetObject"
         Resource = "${aws_s3_bucket.frontend.arn}/*"
+      }
+    ]
+  }) : jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.frontend.arn}/*"
       }
     ]
   })
@@ -67,13 +90,9 @@ resource "aws_s3_bucket_policy" "frontend" {
   }
 }
 
-# CloudFront Origin Access Identity
-resource "aws_cloudfront_origin_access_identity" "frontend" {
-  comment = "OAI for Personal Knowledge Base Frontend"
-}
-
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "frontend" {
+  count  = var.enable_cloudfront ? 1 : 0
   depends_on = [aws_s3_bucket.frontend]
 
   origin {
@@ -81,7 +100,7 @@ resource "aws_cloudfront_distribution" "frontend" {
     origin_id   = "S3-${aws_s3_bucket.frontend.bucket}"
 
     s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.frontend.cloudfront_access_identity_path
+      origin_access_identity = aws_cloudfront_origin_access_identity.frontend[0].cloudfront_access_identity_path
     }
   }
 
@@ -143,8 +162,6 @@ resource "aws_cloudfront_distribution" "frontend" {
 # Empty bucket before destroying (runs during terraform destroy)
 resource "null_resource" "empty_s3_bucket" {
   depends_on = [
-    aws_cloudfront_distribution.frontend,
-    aws_s3_bucket_policy.frontend,
     aws_s3_bucket_versioning.frontend,
     aws_s3_bucket_public_access_block.frontend
   ]
@@ -191,10 +208,15 @@ output "frontend_bucket_name" {
 }
 
 output "frontend_url" {
-  value = aws_cloudfront_distribution.frontend.domain_name
+  value = var.enable_cloudfront ? aws_cloudfront_distribution.frontend[0].domain_name : aws_s3_bucket_website_configuration.frontend.website_endpoint
 }
 
 output "frontend_cdn_url" {
-  value = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+  value = var.enable_cloudfront ? "https://${aws_cloudfront_distribution.frontend[0].domain_name}" : "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
+}
+
+output "frontend_s3_url" {
+  description = "Direct S3 website endpoint URL"
+  value       = "http://${aws_s3_bucket_website_configuration.frontend.website_endpoint}"
 }
 

@@ -1,0 +1,66 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main, fast_deploy ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/github-pages.yml'
+
+# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Get API Gateway URL from Terraform
+        id: terraform
+        working-directory: ./infrastructure
+        run: |
+          echo "API_URL=$(terraform output -raw api_gateway_url 2>/dev/null || echo 'https://gsb6x7ntmb.execute-api.us-east-1.amazonaws.com/prod')" >> $GITHUB_OUTPUT
+          echo "✅ API URL: $(terraform output -raw api_gateway_url)"
+        continue-on-error: true
+      
+      - name: Update Frontend API URLs
+        run: |
+          # Use the API URL from Terraform, or keep existing if Terraform fails
+          API_URL="${{ steps.terraform.outputs.API_URL }}"
+          if [ -z "$API_URL" ]; then
+            API_URL="https://gsb6x7ntmb.execute-api.us-east-1.amazonaws.com/prod"
+          fi
+          
+          echo "📝 Updating API URLs to: $API_URL"
+          
+          # Update all HTML files
+          find frontend -name "*.html" -type f | while read file; do
+            sed -i "s|{{API_GATEWAY_URL}}|${API_URL}|g" "$file"
+            echo "  ✅ Updated: $file"
+          done
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'frontend'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

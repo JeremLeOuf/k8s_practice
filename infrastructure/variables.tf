@@ -22,3 +22,9 @@ variable "alert_email" {
   default     = "your-email@example.com"
 }
 
+variable "enable_cloudfront" {
+  description = "Enable CloudFront distribution (disabled for faster deployments)"
+  type        = bool
+  default     = false
+}
+
