@@ -1,10 +1,9 @@
-version: '3.8'
-
 services:
   get-items:
     build:
       context: ../lambda-functions/get-items
-      dockerfile: ../docker/Dockerfile.lambda
+      dockerfile: ../../docker/Dockerfile.lambda
+    image: pkb-get-items:latest
     environment:
       - AWS_REGION=us-east-1
       - AWS_EXECUTION_ENV=AWS_Lambda_python3.9
@@ -15,7 +14,8 @@ services:
   create-item:
     build:
       context: ../lambda-functions/create-item
-      dockerfile: ../docker/Dockerfile.lambda
+      dockerfile: ../../docker/Dockerfile.lambda
+    image: pkb-create-item:latest
     environment:
       - AWS_REGION=us-east-1
     ports:
@@ -25,7 +25,8 @@ services:
   delete-item:
     build:
       context: ../lambda-functions/delete-item
-      dockerfile: ../docker/Dockerfile.lambda
+      dockerfile: ../../docker/Dockerfile.lambda
+    image: pkb-delete-item:latest
     environment:
       - AWS_REGION=us-east-1
     ports:
