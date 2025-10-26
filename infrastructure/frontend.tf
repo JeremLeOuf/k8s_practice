@@ -6,6 +6,10 @@ resource "aws_s3_bucket" "frontend" {
     Name        = "Personal Knowledge Base Frontend"
     Environment = var.environment
   }
+
+  lifecycle {
+    ignore_changes = [bucket]
+  }
 }
 
 # S3 Bucket Versioning

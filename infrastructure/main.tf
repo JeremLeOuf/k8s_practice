@@ -97,11 +97,16 @@ resource "aws_lambda_function" "get_items" {
   runtime         = "python3.9"
   memory_size     = 128  # Free Tier: 512MB free per month
   timeout          = 3    # Free Tier: 1M requests/month free
+  source_code_hash = fileexists("${path.module}/../lambda-functions/get-items/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/get-items/function.zip") : null
 
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.knowledge_base.name
     }
+  }
+
+  lifecycle {
+    ignore_changes = [source_code_hash]
   }
 }
 
@@ -114,11 +119,16 @@ resource "aws_lambda_function" "create_item" {
   runtime         = "python3.9"
   memory_size     = 128  # Free Tier: 512MB free per month
   timeout          = 3    # Free Tier: 1M requests/month free
+  source_code_hash = fileexists("${path.module}/../lambda-functions/create-item/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/create-item/function.zip") : null
 
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.knowledge_base.name
     }
+  }
+
+  lifecycle {
+    ignore_changes = [source_code_hash]
   }
 }
 
@@ -131,11 +141,16 @@ resource "aws_lambda_function" "delete_item" {
   runtime         = "python3.9"
   memory_size     = 128  # Free Tier: 512MB free per month
   timeout          = 3    # Free Tier: 1M requests/month free
+  source_code_hash = fileexists("${path.module}/../lambda-functions/delete-item/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/delete-item/function.zip") : null
 
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.knowledge_base.name
     }
+  }
+
+  lifecycle {
+    ignore_changes = [source_code_hash]
   }
 }
 
