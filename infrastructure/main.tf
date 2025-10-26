@@ -294,6 +294,10 @@ resource "aws_api_gateway_integration_response" "options_items" {
     "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS'"
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
   }
+
+  depends_on = [
+    aws_api_gateway_integration.options_items
+  ]
 }
 
 # CORS: OPTIONS for /items/{id}
@@ -339,6 +343,10 @@ resource "aws_api_gateway_integration_response" "options_item" {
     "method.response.header.Access-Control-Allow-Methods" = "'DELETE,OPTIONS'"
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
   }
+
+  depends_on = [
+    aws_api_gateway_integration.options_item
+  ]
 }
 
 # Deploy API Gateway
