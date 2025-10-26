@@ -2,6 +2,7 @@ import json
 import boto3
 import os
 from datetime import datetime
+from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['TABLE_NAME'])
@@ -13,7 +14,8 @@ def handler(event, context):
         body = json.loads(event.get('body', '{}'))
         
         # Extract transaction details
-        amount = float(body.get('amount'))
+        # Convert float to Decimal for DynamoDB compatibility
+        amount = Decimal(str(body.get('amount')))
         category = body.get('category', 'other')
         description = body.get('description', '')
         transaction_type = body.get('type', 'expense')  # 'expense' or 'income'
@@ -22,7 +24,7 @@ def handler(event, context):
         # Create transaction item
         item = {
             'id': transaction_id,
-            'amount': amount,
+            'amount': amount,  # Already Decimal
             'category': category,
             'description': description,
             'type': transaction_type,
@@ -54,7 +56,7 @@ def handler(event, context):
             'body': json.dumps({
                 'message': 'Transaction added successfully',
                 'transaction_id': transaction_id,
-                'balance': get_current_balance(table)
+                'balance': float(get_current_balance(table))
             })
         }
         
@@ -71,13 +73,15 @@ def handler(event, context):
 def get_current_balance(table):
     """Calculate current balance from all transactions."""
     response = table.scan()
-    balance = 0
+    balance = Decimal('0')
     
     for item in response['Items']:
+        # Convert DynamoDB Decimal to Decimal type
+        amount = item['amount'] if isinstance(item['amount'], Decimal) else Decimal(str(item['amount']))
         if item['type'] == 'income':
-            balance += item['amount']
+            balance += amount
         else:
-            balance -= item['amount']
+            balance -= amount
     
     return balance
 
