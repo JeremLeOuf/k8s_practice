@@ -169,6 +169,8 @@ jobs:
         terraform state show aws_lambda_permission.api_gateway_get_items &>/dev/null || terraform import aws_lambda_permission.api_gateway_get_items pkb-api-get-items/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Skipped"
         terraform state show aws_lambda_permission.api_gateway_create_item &>/dev/null || terraform import aws_lambda_permission.api_gateway_create_item pkb-api-create-item/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Skipped"
         terraform state show aws_lambda_permission.api_gateway_delete_item &>/dev/null || terraform import aws_lambda_permission.api_gateway_delete_item pkb-api-delete-item/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_lambda_permission.api_gateway_add_transaction &>/dev/null || terraform import aws_lambda_permission.api_gateway_add_transaction budget-tracker-add-transaction/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_lambda_permission.api_gateway_get_balance &>/dev/null || terraform import aws_lambda_permission.api_gateway_get_balance budget-tracker-get-balance/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Skipped"
         
         # DynamoDB Tables
         echo "📦 Importing DynamoDB tables..."
@@ -309,11 +311,10 @@ jobs:
         echo "⏭️  Frontend files unchanged - skipping deployment"
         echo "✅ Previous frontend deployment remains active"
     
-    - name: Wait for CloudFront to be Reachable
-      if: env.NEW_CLOUDFRONT == 'true' || env.NEW_CLOUDFRONT == ''
+    - name: Verify CDN is Reachable
       working-directory: ./infrastructure
       run: |
-        echo "⏳ Waiting for CloudFront CDN to be reachable..."
+        echo "✅ Verifying CDN is accessible..."
         
         # Get CDN URL
         CDN_URL=$(terraform output -raw frontend_cdn_url)
@@ -329,29 +330,49 @@ jobs:
         fi
         
         # Simple HTTP check
+        SUCCESS=false
         for i in $(seq 1 $MAX_ATTEMPTS); do
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$CDN_URL" --max-time 5 || echo "000")
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$CDN_URL" --max-time 5 2>&1 || echo "000")
+          
+          # Clean up curl error messages
+          HTTP_CODE=$(echo "$HTTP_CODE" | grep -oE "[0-9]{3}" | tail -1 || echo "000")
           
           echo "⏱️  Attempt $i/$MAX_ATTEMPTS: HTTP $HTTP_CODE"
           
+          # Success if we get a valid HTTP response (even 403/404 means it's deployed)
           if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "403" ] || [ "$HTTP_CODE" = "404" ]; then
             echo ""
             echo "✅ CDN is reachable! (HTTP $HTTP_CODE)"
-            echo "🎉 Deployment successful!"
-            echo "🌐 CDN URL: $CDN_URL"
-            echo "📚 Knowledge Base: $CDN_URL/app.html"
-            echo "📊 Grafana: $CDN_URL/grafana.html"
-            exit 0
+            SUCCESS=true
+            break
           fi
           
           sleep 5
         done
         
-        echo "⚠️  Timeout: CDN not reachable after $MAX_ATTEMPTS attempts"
-        echo "CDN URL: $CDN_URL"
-        echo "💡 The CDN might still be deploying. Check manually."
-        echo "❌ Deployment may have issues"
-        exit 1
+        if [ "$SUCCESS" = "true" ]; then
+          echo "🎉 Deployment verified successful!"
+          echo "🌐 CDN URL: $CDN_URL"
+          echo "📚 Knowledge Base: $CDN_URL/app.html"
+          echo "📊 Budget Tracker: $CDN_URL/budget.html"
+          echo "📊 Grafana: $CDN_URL/grafana.html"
+          exit 0
+        else
+          echo ""
+          echo "❌ FAILED: CDN not reachable after $MAX_ATTEMPTS attempts"
+          echo "CDN URL: $CDN_URL"
+          echo "HTTP Response: $HTTP_CODE"
+          echo ""
+          echo "Possible reasons:"
+          echo "1. CloudFront is still deploying (can take 15-20 minutes for new distributions)"
+          echo "2. Distribution is disabled in AWS Console"
+          echo "3. S3 bucket policy issues"
+          echo "4. Network connectivity problems"
+          echo ""
+          echo "💡 Check manually: curl -I $CDN_URL"
+          echo ""
+          exit 1
+        fi
 
   destroy:
     name: Destroy Infrastructure
