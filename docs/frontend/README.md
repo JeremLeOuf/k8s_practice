@@ -78,6 +78,21 @@ frontend/
 ## 📖 Learn More
 
 - [Frontend Main Guide](./UI_README.md)
+- [CDN Troubleshooting](./CDN_TROUBLESHOOTING.md) - Fix "Access Denied" errors
+
+### Troubleshooting
+
+**Getting "Access Denied" when accessing CDN?**
+
+```bash
+# Quick diagnosis
+./scripts/check-cdn-status.sh
+
+# Or manually deploy
+./scripts/deploy-frontend.sh
+```
+
+See [CDN_TROUBLESHOOTING.md](./CDN_TROUBLESHOOTING.md) for detailed troubleshooting steps.
 
 **Return to:** [Documentation Index](../README.md) | [Main README](../../README.md)
 
