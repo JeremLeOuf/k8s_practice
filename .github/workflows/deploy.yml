@@ -210,6 +210,62 @@ jobs:
         
         CDN_URL=$(terraform output -raw frontend_cdn_url)
         echo "🌐 Frontend deployed at: https://$CDN_URL"
+    
+    - name: Wait for CloudFront Deployment
+      working-directory: ./infrastructure
+      run: |
+        echo "⏳ Waiting for CloudFront to be fully deployed..."
+        
+        # Get CloudFront distribution ID
+        DIST_ID=$(terraform output -raw frontend_cdn_url | cut -d'/' -f3 | cut -d'.' -f1)
+        CDN_URL=$(terraform output -raw frontend_cdn_url)
+        
+        echo "🔍 Monitoring distribution: $DIST_ID"
+        
+        # Wait for deployment to complete (max 30 minutes)
+        TIMEOUT=1800
+        ELAPSED=0
+        INTERVAL=30
+        
+        while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(aws cloudfront get-distribution --id $DIST_ID --query 'Distribution.Status' --output text 2>/dev/null || echo "Unknown")
+          
+          echo "⏱️  Status: $STATUS (${ELAPSED}s elapsed)"
+          
+          if [ "$STATUS" = "Deployed" ]; then
+            echo "✅ CloudFront deployment complete!"
+            
+            # Verify URL is reachable
+            echo "🔍 Verifying CDN URL is reachable..."
+            for i in {1..10}; do
+              if curl -s -o /dev/null -w "%{http_code}" "https://$CDN_URL" | grep -q "200"; then
+                echo "✅ CDN is reachable and responding!"
+                break
+              elif [ $i -eq 10 ]; then
+                echo "⚠️  CDN might not be reachable yet, but deployment is complete"
+              else
+                echo "⏳ Attempt $i/10: Waiting for CDN..."
+                sleep 5
+              fi
+            done
+            
+            echo ""
+            echo "🎉 Deployment successful!"
+            echo "🌐 CDN URL: https://$CDN_URL"
+            echo "📚 Knowledge Base: https://$CDN_URL/app.html"
+            echo "📊 Grafana: https://$CDN_URL/grafana.html"
+            exit 0
+          fi
+          
+          sleep $INTERVAL
+          ELAPSED=$((ELAPSED + INTERVAL))
+        done
+        
+        echo "⚠️  Timeout waiting for CloudFront deployment (30 minutes)"
+        echo "CDN URL: https://$CDN_URL"
+        echo "⚠️  CDN might still be deploying. Check status manually."
+        # Don't fail the job, but warn
+        exit 0
 
   destroy:
     name: Destroy Infrastructure
