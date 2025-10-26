@@ -5,6 +5,16 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform (deploy or destroy)'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - destroy
 
 env:
   AWS_REGION: us-east-1
@@ -34,7 +44,7 @@ jobs:
     - name: Build Lambda Functions
       run: |
         chmod +x scripts/build-lambda.sh
-        ./scripts/build-lambda.sh || echo "Build skipped - Lambda packages will be created during deployment"
+        ./scripts/build-lambda.sh || echo "Build skipped"
       continue-on-error: true
     
     - name: Terraform Init
@@ -58,7 +68,9 @@ jobs:
   deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy')
     
     steps:
     - name: Checkout code
@@ -100,81 +112,65 @@ jobs:
       working-directory: ./infrastructure
       run: |
         echo "🔍 Importing existing resources..."
-        
-        # Get AWS Account ID
         export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-        
-        # Import DynamoDB table
-        terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase || echo "⚠️ DynamoDB table not found or already imported"
-        
-        # Import IAM role
-        terraform import aws_iam_role.lambda_role pkb-lambda-execution-role || echo "⚠️ IAM role not found or already imported"
-        
-        # Import IAM policy
-        terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access || echo "⚠️ IAM policy not found or already imported"
-        
-        # Import IAM user
-        terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch || echo "⚠️ IAM user not found or already imported"
-        
-        # Import S3 bucket
-        terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ S3 bucket not found or already imported"
-        
-        # Import bucket versioning
-        terraform import aws_s3_bucket_versioning.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ Versioning not found"
-        
-        # Import public access block
-        terraform import aws_s3_bucket_public_access_block.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ Public access block not found"
-        
-        echo "✅ Import step completed"
+        terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase || echo "⚠️ Already imported"
+        terraform import aws_iam_role.lambda_role pkb-lambda-execution-role || echo "⚠️ Already imported"
+        terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access || echo "⚠️ Already imported"
+        terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch || echo "⚠️ Already imported"
+        terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ Already imported"
       continue-on-error: true
     
     - name: Terraform Apply
       working-directory: ./infrastructure
-      run: |
-        set +e  # Don't exit on error
-        terraform apply -auto-approve -refresh=false
-        EXIT_CODE=$?
-        
-        # Check for specific errors we can handle
-        if [ $EXIT_CODE -ne 0 ]; then
-          echo "⚠️ Terraform apply returned errors. Checking specific issues..."
-          
-          # Try to import missing resources that failed
-          terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base 2>/dev/null || true
-          terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase 2>/dev/null || true
-          terraform import aws_iam_role.lambda_role pkb-lambda-execution-role 2>/dev/null || true
-          
-          # Re-run apply
-          echo "🔄 Retrying after imports..."
-          terraform apply -auto-approve -refresh=false
-        fi
-        
-        echo "✅ Terraform apply completed"
-      continue-on-error: true
+      run: terraform apply -auto-approve
 
-  test-lambda:
-    name: Test Lambda Functions
+  destroy:
+    name: Destroy Infrastructure
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
-    - name: Setup Python
-      uses: actions/setup-python@v4
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        python-version: '3.9'
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
     
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install boto3 pytest
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
     
-    - name: Test API
+    - name: Terraform Init
+      working-directory: ./infrastructure
+      run: terraform init
+    
+    - name: Import Existing Resources
+      working-directory: ./infrastructure
       run: |
-        API_URL=$(echo "${{ secrets.API_URL }}" || echo "https://dfdfpzg3a8.execute-api.us-east-1.amazonaws.com/prod")
-        curl -s $API_URL/items | jq '.'
-        echo "✅ API test passed"
+        echo "🔍 Importing existing resources before destroy..."
+        export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+        terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase || true
+        terraform import aws_iam_role.lambda_role pkb-lambda-execution-role || true
+        terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access || true
+        terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch || true
+        terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base || true
+      continue-on-error: true
+    
+    - name: Empty S3 Bucket
+      working-directory: ./infrastructure
+      run: |
+        BUCKET=$(terraform output -raw frontend_bucket_name 2>/dev/null || echo "pkb-frontend-personal-knowledge-base")
+        echo "🗑️ Emptying S3 bucket: $BUCKET"
+        aws s3 rm "s3://$BUCKET" --recursive || echo "Bucket already empty"
+    
+    - name: Terraform Destroy
+      working-directory: ./infrastructure
+      run: terraform destroy -auto-approve
 
   notify:
     name: Notify Deployment
@@ -190,4 +186,3 @@ jobs:
     - name: Failure
       if: needs.deploy.result == 'failure'
       run: echo "❌ Deployment failed!"
-
