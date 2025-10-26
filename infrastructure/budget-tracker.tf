@@ -15,8 +15,9 @@ resource "aws_dynamodb_table" "budget_tracker" {
   }
 
   global_secondary_index {
-    name     = "TimestampIndex"
-    hash_key = "timestamp"
+    name            = "TimestampIndex"
+    hash_key        = "timestamp"
+    projection_type = "ALL"
   }
 
   tags = {
