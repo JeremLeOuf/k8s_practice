@@ -101,16 +101,20 @@ jobs:
           lambda-functions/*/function.zip
         key: lambda-${{ runner.os }}-${{ hashFiles('lambda-functions/**/*.py', 'lambda-functions/**/requirements.txt') }}
     
-    - name: Build Lambda Functions
+    - name: Build Lambda Functions (Optimized)
       if: steps.lambda-cache.outputs.cache-hit != 'true'
       run: |
         chmod +x scripts/build-lambda.sh
         ./scripts/build-lambda.sh
+        
+        echo "📊 Package sizes:"
+        du -h lambda-functions/*/function.zip
     
     - name: Verify Lambda Packages
       run: |
         ls -lah lambda-functions/*/function.zip
-        echo "✅ Lambda packages ready"
+        TOTAL_SIZE=$(du -ch lambda-functions/*/function.zip | tail -1)
+        echo "✅ Lambda packages ready ($TOTAL_SIZE)"
     
     - name: Cache Terraform
       uses: actions/cache@v3
@@ -129,22 +133,47 @@ jobs:
     - name: Import Existing Resources (Skip if in state)
       working-directory: ./infrastructure
       run: |
-        echo "🔍 Checking existing resources..."
+        echo "🔍 Checking and importing existing resources..."
         export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
         
-        # Only import if not already in state
+        # DynamoDB Tables
+        echo "📦 Importing DynamoDB tables..."
         terraform state show aws_dynamodb_table.knowledge_base &>/dev/null || terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_dynamodb_table.budget_tracker &>/dev/null || terraform import aws_dynamodb_table.budget_tracker BudgetTracker 2>/dev/null || echo "⚠️ Skipped"
+        
+        # IAM Roles
+        echo "🔑 Importing IAM roles..."
         terraform state show aws_iam_role.lambda_role &>/dev/null || terraform import aws_iam_role.lambda_role pkb-lambda-execution-role 2>/dev/null || echo "⚠️ Skipped"
+        terraform state show aws_iam_role.budget_tracker_lambda &>/dev/null || terraform import aws_iam_role.budget_tracker_lambda budget-tracker-lambda-role 2>/dev/null || echo "⚠️ Skipped"
+        
+        # IAM Policies
+        echo "📝 Importing IAM policies..."
         terraform state show aws_iam_policy.grafana_cloudwatch_access &>/dev/null || terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access 2>/dev/null || echo "⚠️ Skipped"
+        
+        # IAM User
+        echo "👤 Importing IAM users..."
         terraform state show aws_iam_user.grafana_cloudwatch &>/dev/null || terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch 2>/dev/null || echo "⚠️ Skipped"
+        
+        # S3 Bucket
+        echo "🪣 Importing S3 bucket..."
         terraform state show aws_s3_bucket.frontend &>/dev/null || terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base 2>/dev/null || echo "⚠️ Skipped"
         
         echo "✅ Import check completed"
       continue-on-error: true
     
+    - name: Terraform Plan
+      working-directory: ./infrastructure
+      run: |
+        echo "📋 Running terraform plan to see what will change..."
+        terraform plan -refresh=false
+      continue-on-error: true
+    
     - name: Terraform Apply (No Refresh)
       working-directory: ./infrastructure
-      run: terraform apply -auto-approve -refresh=false
+      run: |
+        echo "⏱️ Starting terraform apply at $(date)"
+        time terraform apply -auto-approve -refresh=false -parallelism=10
+        echo "✅ Completed terraform apply at $(date)"
 
   destroy:
     name: Destroy Infrastructure

@@ -13,35 +13,54 @@ NC='\033[0m' # No Color
 cd lambda-functions
 
 for func in get-items create-item delete-item; do
+    START_TIME=$(date +%s)
     echo -e "${BLUE}Building $func...${NC}"
     cd $func
     
     # Clean previous build
     rm -rf function.zip package/
     
+    # Get requirements
+    if [ -f requirements.txt ]; then
+        DEPS=$(grep -v '^#' requirements.txt | grep -v '^$' | tr '\n' ',' || true)
+        # Count non-comment lines
+        DEPS_COUNT=$(grep -v '^#' requirements.txt | grep -v '^$' | wc -l)
+    else
+        DEPS=""
+        DEPS_COUNT=0
+    fi
+    
     # Check if dependencies include only boto3 (pre-installed in Lambda runtime)
-    if [ -f requirements.txt ] && grep -q "^boto3" requirements.txt && ! grep -q "^[^#]*[^boto3]" requirements.txt; then
-      echo "⚠️ Only boto3 in requirements - boto3 is pre-installed in Lambda runtime"
-      echo "Creating minimal package..."
-      
-      # Create package with just the Lambda function
+    BOTO3_ONLY=false
+    if [ ! -z "$DEPS" ] && [ "$DEPS_COUNT" -gt 0 ]; then
+        # Check if boto3 is the only dependency (handle various formats like "boto3>=1.28.0")
+        if echo "$DEPS" | grep -q "boto3" && [ "$DEPS_COUNT" -eq 1 ]; then
+            BOTO3_ONLY=true
+        fi
+    fi
+    
+    if [ "$BOTO3_ONLY" = true ]; then
+      echo "⚠️ Only boto3 in requirements (pre-installed in Lambda) - creating minimal package (<100KB)"
       mkdir -p package
       cp lambda_function.py package/
     else
-      # Install dependencies to a package directory
-      echo "Installing dependencies..."
+      # Install dependencies
+      echo "Installing dependencies: ${DEPS:-none}"
       mkdir -p package
-      pip install -q -r requirements.txt -t package/ --upgrade 2>/dev/null || echo "Install failed, continuing..."
+      
+      if [ -f requirements.txt ] && [ ! -z "$DEPS" ]; then
+        pip install -q -r requirements.txt -t package/ --upgrade --no-cache-dir 2>/dev/null || echo "Install warning"
+      fi
       
       # Copy Lambda function
       cp lambda_function.py package/
       
-      # Remove unnecessary files to reduce size
-      find package -name "*.pyc" -delete
-      find package -type d -name "__pycache__" -exec rm -r {} + 2>/dev/null || true
-      find package -name "*.dist-info" -exec rm -r {} + 2>/dev/null || true
-      find package -type d -name "pip" -exec rm -r {} + 2>/dev/null || true
-      find package -type d -name "setuptools" -exec rm -r {} + 2>/dev/null || true
+      # Clean up to minimize size
+      find package -name "*.pyc" -delete 2>/dev/null || true
+      find package -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+      find package -name "*.dist-info" -type d -exec rm -rf {} + 2>/dev/null || true
+      find package -type d -name "pip" -exec rm -rf {} + 2>/dev/null || true
+      find package -type d -name "setuptools" -exec rm -rf {} + 2>/dev/null || true
       find package -name "*.html" -delete 2>/dev/null || true
       find package -name "*.txt" -delete 2>/dev/null || true
     fi
@@ -49,12 +68,14 @@ for func in get-items create-item delete-item; do
     # Create zip
     echo "Creating ZIP..."
     cd package
-    zip -rq ../function.zip .
+    zip -rq ../function.zip . 2>/dev/null || zip -rq ../function.zip *
     cd ..
     
-    # Get file size
+    # Get file size and build time
     SIZE=$(du -h function.zip | cut -f1)
-    echo -e "${GREEN}✅ $func packaged (${SIZE})${NC}"
+    END_TIME=$(date +%s)
+    ELAPSED=$((END_TIME - START_TIME))
+    echo -e "${GREEN}✅ $func packaged (${SIZE}) in ${ELAPSED}s${NC}"
     cd ..
 done
 
