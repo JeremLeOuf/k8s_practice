@@ -2,12 +2,23 @@
 
 set -e
 
-echo "🚀 Deploying frontend to S3 and CloudFront..."
+echo "🚀 Deploying multi-app frontend to S3..."
 
 # Colors
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
 NC='\033[0m'
+
+echo ""
+echo -e "${BLUE}📁 Frontend Structure:${NC}"
+echo "  ├── index.html (Home/Hub)"
+echo "  ├── knowledge-base/ (Personal Knowledge Base App)"
+echo "  │   ├── app.html"
+echo "  │   └── grafana.html"
+echo "  └── budget-tracker/ (Budget Tracker App)"
+echo "      └── budget.html"
+echo ""
 
 # Get the script directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,6 +37,7 @@ fi
 cd "$PROJECT_ROOT"
 
 echo -e "${BLUE}📤 Uploading frontend files to S3...${NC}"
+echo -e "${YELLOW}  ✨ Deploying: Home Hub, Knowledge Base App, Budget Tracker App${NC}"
 aws s3 sync frontend/ s3://${BUCKET_NAME}/ --delete
 
 echo -e "${GREEN}✅ Frontend deployed successfully!${NC}"

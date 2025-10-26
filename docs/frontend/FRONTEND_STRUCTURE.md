@@ -1,134 +1,246 @@
-# Frontend Structure
+# Frontend Structure - Multi-App Organization
 
 ## Overview
-The CDN frontend now serves as a multi-app hub with navigation between different learning modules.
 
-## File Structure
+The frontend is now organized into separate application folders while maintaining a unified deployment pipeline. This structure allows for better organization, code reuse, and easier maintenance.
+
+## Directory Structure
 
 ```
 frontend/
-├── index.html          # 🏠 Homepage - Welcome and app selection
-├── app.html            # 📚 Personal Knowledge Base App
-├── grafana.html        # 📊 Grafana Dashboard Access
-└── budget.html         # 💰 Budget Tracker App (to be created)
+├── index.html                 # 🏠 Home Hub - Main landing page
+│
+├── knowledge-base/            # 📚 Personal Knowledge Base App
+│   ├── README.md
+│   ├── app.html              # Main knowledge base application
+│   └── grafana.html          # Grafana monitoring dashboard
+│
+├── budget-tracker/            # 💰 Budget Tracker App
+│   ├── README.md
+│   └── budget.html           # Budget tracking application
+│
+└── shared/                    # 🎨 Shared Assets (for future use)
+    └── README.md
 ```
 
-## Pages
+## Apps
 
-### 1. Homepage (`index.html`)
-**Purpose**: Landing page and app selector
+### 1. Knowledge Base App (`knowledge-base/`)
 
-**Features**:
-- Welcome message for CI/CD & SysOps learning environment
-- Grid of app cards for easy navigation
-- Tech stack overview
-- GitHub link
+**Purpose**: Personal knowledge management system
 
-**Navigation**:
-- Personal Knowledge Base → `app.html`
-- Budget Tracker → `budget.html`
-- Grafana Dashboard → `grafana.html`
-
-### 2. Personal Knowledge Base (`app.html`)
-**Purpose**: Main application for creating/managing knowledge items
+**Files**:
+- `app.html` - CRUD operations for knowledge items
+- `grafana.html` - Monitoring dashboard
 
 **Features**:
-- Create, view, and delete knowledge items
-- RESTful API integration with Lambda functions
-- Modern, responsive UI
+- Create, read, delete knowledge items
+- RESTful API integration
+- Real-time updates
 
 **API Endpoints**:
 - GET `/items` - List all items
 - POST `/items` - Create new item
-- DELETE `/items/{id}` - Delete an item
+- DELETE `/items/{id}` - Delete item
 
-### 3. Grafana Dashboard (`grafana.html`)
-**Purpose**: Embedded Grafana monitoring interface
+**Lambda Functions**:
+- `pkb-api-get-items`
+- `pkb-api-create-item`
+- `pkb-api-delete-item`
 
-**Features**:
-- Full-screen Grafana dashboard
-- Auto-detection of Grafana availability
-- Helpful error messages with setup instructions
-- Port-forward helper instructions
+### 2. Budget Tracker App (`budget-tracker/`)
 
-**Usage**:
-Requires running: `kubectl port-forward -n grafana svc/grafana-service 3000:3000`
-
-### 4. Budget Tracker (`budget.html`) - TODO
 **Purpose**: Financial tracking and budget management
 
-**Features** (to be implemented):
-- Add transactions
-- View balance
-- Set spending alerts
+**Files**:
+- `budget.html` - Transaction management and balance tracking
+
+**Features**:
+- Add income/expense transactions
+- Real-time balance calculation
 - Transaction history
+- SNS email alerts
+
+**API Endpoints**:
+- GET `/balance` - Get balance and transactions
+- POST `/transactions` - Add new transaction
+
+**Lambda Functions**:
+- `budget-tracker-get-balance`
+- `budget-tracker-add-transaction`
+
+## Benefits of This Structure
+
+### ✅ Separation of Concerns
+- Each app has its own folder
+- Clear boundaries between applications
+- Independent development and deployment
+
+### ✅ Shared Resources
+- Common navigation structure
+- Unified deployment pipeline
+- Same S3 bucket and CloudFront distribution
+
+### ✅ Code Reuse
+- Shared API Gateway endpoints
+- Common Lambda functions where applicable
+- Unified infrastructure
+
+### ✅ Maintainability
+- Easier to locate app-specific code
+- Clear README files for each app
+- Better organization for future additions
 
 ## Deployment
 
-### Manual Deployment
+### Single Command Deployment
+
+All apps deploy together with one command:
+
 ```bash
-aws s3 sync frontend/ s3://pkb-frontend-personal-knowledge-base/
-aws cloudfront create-invalidation --distribution-id <dist-id> --paths "/*"
+./scripts/deploy-frontend.sh
 ```
 
-### CI/CD Deployment
-Automatic via GitHub Actions after Terraform apply.
+### What Gets Deployed
 
-## CDN URLs
+1. **Home Hub** (`index.html`) - Main landing page
+2. **Knowledge Base App** - All files in `knowledge-base/`
+3. **Budget Tracker App** - All files in `budget-tracker/`
+4. **Shared Assets** - All files in `shared/`
 
-- Homepage: `https://d3fkfd08m7hmoz.cloudfront.net/`
-- Knowledge Base: `https://d3fkfd08m7hmoz.cloudfront.net/app.html`
-- Grafana: `https://d3fkfd08m7hmoz.cloudfront.net/grafana.html`
-- Budget Tracker: `https://d3fkfd08m7hmoz.cloudfront.net/budget.html`
-
-## Navigation Flow
+### Deployment Flow
 
 ```
-index.html (Homepage)
-  ├── → app.html (Knowledge Base)
-  ├── → budget.html (Budget Tracker)
-  └── → grafana.html (Monitoring)
-
-Each page has back button to return to homepage
+Frontend Code
+    ↓
+./scripts/deploy-frontend.sh
+    ↓
+aws s3 sync frontend/ s3://bucket/
+    ↓
+S3 Bucket (Static Website)
+    ↓
+CloudFront (if enabled) or Direct S3 Access
 ```
 
-## Styling
+## Navigation
 
-All pages share:
-- Consistent color scheme (gradient purple)
-- Responsive design (mobile-friendly)
-- Modern UI with cards and hover effects
-- Easy navigation between apps
+Apps link to each other using relative paths:
+
+**From Home Hub** (`index.html`):
+```html
+<a href="knowledge-base/app.html">Personal Knowledge Base</a>
+<a href="budget-tracker/budget.html">Budget Tracker</a>
+```
+
+**From App Pages**:
+```html
+<!-- Go back to home -->
+<a href="../index.html">🏠 Home</a>
+
+<!-- Link to other apps -->
+<a href="../knowledge-base/app.html">📚 Knowledge Base</a>
+```
+
+## Adding New Apps
+
+To add a new app:
+
+1. **Create app folder**:
+   ```bash
+   mkdir frontend/my-new-app
+   ```
+
+2. **Add app files**:
+   ```bash
+   # Add your HTML/CSS/JS files
+   touch frontend/my-new-app/main.html
+   ```
+
+3. **Update navigation** in `index.html`:
+   ```html
+   <a href="my-new-app/main.html" class="app-card">
+     <!-- App card content -->
+   </a>
+   ```
+
+4. **Deploy**:
+   ```bash
+   ./scripts/deploy-frontend.sh
+   ```
+
+That's it! The unified deployment will include your new app automatically.
+
+## Lambda Functions Architecture
+
+### Shared Lambda Resources
+
+Both apps share the same:
+- ✅ API Gateway (single REST API)
+- ✅ IAM roles and policies
+- ✅ DynamoDB access permissions
+
+### App-Specific Lambda Functions
+
+**Knowledge Base**:
+- Located: `lambda-functions/`
+- Functions: get-items, create-item, delete-item
+- Table: `PersonalKnowledgeBase`
+
+**Budget Tracker**:
+- Located: `budget-tracker/lambda-functions/`
+- Functions: add-transaction, get-balance
+- Table: `BudgetTracker`
+
+## Build Pipeline Optimization
+
+### Single Infrastructure
+
+- One S3 bucket for all apps
+- One CloudFront distribution (optional)
+- One deployment script
+- Shared infrastructure costs
+
+### Parallel Deployment
+
+Apps deploy simultaneously:
+```
+Deploy Knowledge Base ──┐
+                        ├─→ S3 Sync → Deploy Complete
+Deploy Budget Tracker ──┘
+```
+
+### Optimized Builds
+
+- Lambda functions build separately
+- Frontend apps deploy together
+- No redundant infrastructure
+
+## Access URLs
+
+### S3 Website Endpoint (Fast Mode)
+```
+http://pkb-frontend-personal-knowledge-base.s3-website-us-east-1.amazonaws.com/
+http://pkb-frontend-personal-knowledge-base.s3-website-us-east-1.amazonaws.com/knowledge-base/app.html
+http://pkb-frontend-personal-knowledge-base.s3-website-us-east-1.amazonaws.com/budget-tracker/budget.html
+```
+
+### CloudFront (Production Mode)
+```
+https://d1234567890abc.cloudfront.net/
+https://d1234567890abc.cloudfront.net/knowledge-base/app.html
+https://d1234567890abc.cloudfront.net/budget-tracker/budget.html
+```
 
 ## Future Enhancements
 
-1. **Budget Tracker UI** - Full implementation
-2. **Dark mode** - Toggle for light/dark themes
-3. **User authentication** - IAM/Cognito integration
-4. **Dashboard hub** - Overview page with links
-5. **Documentation** - In-app guides
-6. **API testing** - Interactive API explorer
+### Planned Features
 
-## Troubleshooting
+- [ ] Shared CSS/styles in `shared/`
+- [ ] Common JavaScript utilities
+- [ ] Shared icons and images
+- [ ] Common components library
+- [ ] App-specific build optimizations
 
-### "Access Denied" on CDN
-1. Wait for CloudFront deployment (15-20 min)
-2. Check S3 bucket has files:
-   ```bash
-   aws s3 ls s3://pkb-frontend-personal-knowledge-base/
-   ```
-3. Invalidate cache manually:
-   ```bash
-   aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
-   ```
+### Migration Path
 
-### App doesn't load
-1. Check browser console for errors
-2. Verify API Gateway URL in app
-3. Check CORS settings in API Gateway
-
-### Grafana shows "Not Accessible"
-1. Run port-forward command
-2. Ensure Grafana pod is running
-3. Check kubectl access to cluster
-
+Current apps maintain backward compatibility while supporting future enhancements.
