@@ -30,11 +30,19 @@ resource "aws_iam_policy" "grafana_cloudwatch_access" {
       }
     ]
   })
+
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 resource "aws_iam_user" "grafana_cloudwatch" {
   name = "pkb-grafana-cloudwatch"
   path = "/monitoring/"
+
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 resource "aws_iam_user_policy_attachment" "grafana_cloudwatch" {

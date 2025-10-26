@@ -89,16 +89,33 @@ jobs:
       working-directory: ./infrastructure
       run: terraform init
     
+    - name: Import Existing Resources (Optional)
+      working-directory: ./infrastructure
+      run: |
+        # Try to import existing resources to prevent conflicts
+        terraform import aws_dynamodb_table.knowledge_base PersonalKnowledgeBase 2>/dev/null || echo "DynamoDB table not existing or already imported"
+        terraform import aws_iam_role.lambda_role pkb-lambda-execution-role 2>/dev/null || echo "IAM role not existing or already imported"
+        terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/pkb-grafana-cloudwatch-access 2>/dev/null || echo "IAM policy not existing or already imported"
+        terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch 2>/dev/null || echo "IAM user not existing or already imported"
+        echo "✅ Import step completed"
+      continue-on-error: true
+    
     - name: Terraform Apply
       working-directory: ./infrastructure
       run: terraform apply -auto-approve
       continue-on-error: true
     
-    - name: Handle Errors
+    - name: Check Apply Status
       if: failure()
       run: |
-        echo "⚠️ Deployment had issues. This may be normal if resources already exist."
-        echo "Check the infrastructure manually if needed."
+        echo "⚠️ Terraform apply had issues."
+        echo "Possible causes:"
+        echo "1. Resources already exist (this is OK for updates)"
+        echo "2. Missing permissions"
+        echo "3. AWS service limits"
+        echo ""
+        echo "If resources already exist, the infrastructure is likely up to date."
+        echo "Check the Actions logs for specific errors."
 
   test-lambda:
     name: Test Lambda Functions

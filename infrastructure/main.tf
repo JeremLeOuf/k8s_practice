@@ -35,6 +35,10 @@ resource "aws_dynamodb_table" "knowledge_base" {
     Name        = "Personal Knowledge Base"
     Environment = var.environment
   }
+
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 # IAM Role for Lambda
@@ -53,6 +57,10 @@ resource "aws_iam_role" "lambda_role" {
       }
     ]
   })
+
+  lifecycle {
+    ignore_changes = [name]
+  }
 }
 
 # IAM Policy for Lambda to access DynamoDB
@@ -360,7 +368,6 @@ resource "aws_api_gateway_deployment" "api" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.api.id
-  stage_name  = "prod"
   
   triggers = {
     redeployment = sha1(jsonencode([
@@ -374,9 +381,20 @@ resource "aws_api_gateway_deployment" "api" {
   }
 }
 
+# API Gateway Stage (replaces deprecated stage_name)
+resource "aws_api_gateway_stage" "prod" {
+  deployment_id = aws_api_gateway_deployment.api.id
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  stage_name    = "prod"
+}
+
 # Outputs
 output "api_url" {
-  value = "${aws_api_gateway_deployment.api.invoke_url}/items"
+  value = "${aws_api_gateway_stage.prod.invoke_url}/items"
+}
+
+output "api_gateway_url" {
+  value = aws_api_gateway_stage.prod.invoke_url
 }
 
 output "dynamodb_table_name" {
