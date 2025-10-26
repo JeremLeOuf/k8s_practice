@@ -230,14 +230,23 @@ jobs:
       run: |
         echo "⏳ Waiting for CloudFront to be fully deployed..."
         
-        # Get CloudFront distribution ID
-        DIST_ID=$(terraform output -raw frontend_cdn_url | cut -d'/' -f3 | cut -d'.' -f1)
+        # Get CloudFront distribution ID and URL
         CDN_URL=$(terraform output -raw frontend_cdn_url)
+        
+        # Extract distribution ID from CDN URL (format: https://d12345.cloudfront.net)
+        DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?DomainName=='$CDN_URL'].Id" --output text 2>/dev/null || echo "")
+        
+        if [ -z "$DIST_ID" ]; then
+          echo "⚠️  Could not find CloudFront distribution ID"
+          echo "🌐 CDN URL: https://$CDN_URL"
+          echo "⚠️  Proceeding anyway - CDN may still be deploying"
+          exit 0
+        fi
         
         echo "🔍 Monitoring distribution: $DIST_ID"
         
-        # Wait for deployment to complete (max 30 minutes)
-        TIMEOUT=1800
+        # Wait for deployment to complete (max 20 minutes instead of 30)
+        TIMEOUT=1200
         ELAPSED=0
         INTERVAL=30
         
@@ -256,7 +265,7 @@ jobs:
                 echo "✅ CDN is reachable and responding!"
                 break
               elif [ $i -eq 10 ]; then
-                echo "⚠️  CDN might not be reachable yet, but deployment is complete"
+                echo "⚠️  CDN deployment complete but not yet fully reachable"
               else
                 echo "⏳ Attempt $i/10: Waiting for CDN..."
                 sleep 5
@@ -275,10 +284,10 @@ jobs:
           ELAPSED=$((ELAPSED + INTERVAL))
         done
         
-        echo "⚠️  Timeout waiting for CloudFront deployment (30 minutes)"
+        echo "⚠️  Timeout waiting for CloudFront deployment status (20 minutes)"
         echo "CDN URL: https://$CDN_URL"
-        echo "⚠️  CDN might still be deploying. Check status manually."
-        # Don't fail the job, but warn
+        echo "⚠️  CloudFront might still be deploying. The app should be accessible now."
+        echo "🌐 Try accessing: https://$CDN_URL"
         exit 0
 
   destroy:

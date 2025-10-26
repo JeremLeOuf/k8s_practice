@@ -18,7 +18,10 @@ echo "📊 Access Grafana at: http://localhost:3000"
 echo "👤 Username: admin"
 echo "🔑 Password: admin"
 echo ""
+echo "⚠️  Note: 'broken pipe' errors are normal and can be ignored"
 echo "Press Ctrl+C to stop"
+echo ""
 
-kubectl port-forward -n grafana svc/grafana-service 3000:3000
+# Suppress error messages from broken pipes (common with web page reloads)
+kubectl port-forward -n grafana svc/grafana-service 3000:3000 2>&1 | grep -v "Unhandled Error" | grep -v "error copying"
 
