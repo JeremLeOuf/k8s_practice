@@ -36,6 +36,20 @@ terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base || 
 terraform import aws_s3_bucket_versioning.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ Already imported"
 terraform import aws_s3_bucket_public_access_block.frontend pkb-frontend-personal-knowledge-base || echo "⚠️ Already imported"
 
+# Lambda Permissions (for API Gateway)
+echo "🔐 Importing Lambda permissions..."
+terraform import aws_lambda_permission.api_gateway_get_items pkb-api-get-items/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Already imported"
+terraform import aws_lambda_permission.api_gateway_create_item pkb-api-create-item/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Already imported"
+terraform import aws_lambda_permission.api_gateway_delete_item pkb-api-delete-item/AllowExecutionFromAPIGateway 2>/dev/null || echo "⚠️ Already imported"
+
+# Lambda Functions
+echo "⚡ Importing Lambda functions..."
+terraform import aws_lambda_function.get_items pkb-api-get-items 2>/dev/null || echo "⚠️ Already imported"
+terraform import aws_lambda_function.create_item pkb-api-create-item 2>/dev/null || echo "⚠️ Already imported"
+terraform import aws_lambda_function.delete_item pkb-api-delete-item 2>/dev/null || echo "⚠️ Already imported"
+terraform import aws_lambda_function.add_transaction budget-tracker-add-transaction 2>/dev/null || echo "⚠️ Already imported"
+terraform import aws_lambda_function.get_balance budget-tracker-get-balance 2>/dev/null || echo "⚠️ Already imported"
+
 echo ""
 echo "✅ Import complete!"
 echo ""

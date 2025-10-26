@@ -124,10 +124,6 @@ resource "aws_lambda_function" "add_transaction" {
       SNS_TOPIC_ARN = aws_sns_topic.budget_alerts.arn
     }
   }
-
-  lifecycle {
-    ignore_changes = [source_code_hash]
-  }
 }
 
 # Lambda Function: Get Balance
@@ -144,10 +140,6 @@ resource "aws_lambda_function" "get_balance" {
     variables = {
       TABLE_NAME = aws_dynamodb_table.budget_tracker.name
     }
-  }
-
-  lifecycle {
-    ignore_changes = [source_code_hash]
   }
 }
 

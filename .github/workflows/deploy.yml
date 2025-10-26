@@ -99,7 +99,8 @@ jobs:
       with:
         path: |
           lambda-functions/*/function.zip
-        key: lambda-${{ runner.os }}-${{ hashFiles('lambda-functions/**/*.py', 'lambda-functions/**/requirements.txt') }}
+          budget-tracker/lambda-functions/*/function.zip
+        key: lambda-${{ runner.os }}-${{ hashFiles('lambda-functions/**/*.py', 'lambda-functions/**/requirements.txt', 'budget-tracker/lambda-functions/**/*.py', 'budget-tracker/lambda-functions/**/requirements.txt') }}
     
     - name: Build Lambda Functions (Optimized)
       if: steps.lambda-cache.outputs.cache-hit != 'true'

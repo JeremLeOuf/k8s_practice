@@ -102,67 +102,52 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
 
 # Lambda Function: Get Items
 resource "aws_lambda_function" "get_items" {
-  filename         = "${path.module}/../lambda-functions/get-items/function.zip"
-  function_name    = "pkb-api-get-items"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.9"
-  memory_size      = 128 # Free Tier: 512MB free per month
-  timeout          = 3   # Free Tier: 1M requests/month free
-  source_code_hash = fileexists("${path.module}/../lambda-functions/get-items/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/get-items/function.zip") : null
+  filename      = "${path.module}/../lambda-functions/get-items/function.zip"
+  function_name = "pkb-api-get-items"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.9"
+  memory_size   = 128 # Free Tier: 512MB free per month
+  timeout       = 3   # Free Tier: 1M requests/month free
 
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.knowledge_base.name
     }
-  }
-
-  lifecycle {
-    ignore_changes = [source_code_hash]
   }
 }
 
 # Lambda Function: Create Item
 resource "aws_lambda_function" "create_item" {
-  filename         = "${path.module}/../lambda-functions/create-item/function.zip"
-  function_name    = "pkb-api-create-item"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.9"
-  memory_size      = 128 # Free Tier: 512MB free per month
-  timeout          = 3   # Free Tier: 1M requests/month free
-  source_code_hash = fileexists("${path.module}/../lambda-functions/create-item/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/create-item/function.zip") : null
+  filename      = "${path.module}/../lambda-functions/create-item/function.zip"
+  function_name = "pkb-api-create-item"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.9"
+  memory_size   = 128 # Free Tier: 512MB free per month
+  timeout       = 3   # Free Tier: 1M requests/month free
 
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.knowledge_base.name
     }
-  }
-
-  lifecycle {
-    ignore_changes = [source_code_hash]
   }
 }
 
 # Lambda Function: Delete Item
 resource "aws_lambda_function" "delete_item" {
-  filename         = "${path.module}/../lambda-functions/delete-item/function.zip"
-  function_name    = "pkb-api-delete-item"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "lambda_function.handler"
-  runtime          = "python3.9"
-  memory_size      = 128 # Free Tier: 512MB free per month
-  timeout          = 3   # Free Tier: 1M requests/month free
-  source_code_hash = fileexists("${path.module}/../lambda-functions/delete-item/function.zip") ? filebase64sha256("${path.module}/../lambda-functions/delete-item/function.zip") : null
+  filename      = "${path.module}/../lambda-functions/delete-item/function.zip"
+  function_name = "pkb-api-delete-item"
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "lambda_function.handler"
+  runtime       = "python3.9"
+  memory_size   = 128 # Free Tier: 512MB free per month
+  timeout       = 3   # Free Tier: 1M requests/month free
 
   environment {
     variables = {
       TABLE_NAME = aws_dynamodb_table.knowledge_base.name
     }
-  }
-
-  lifecycle {
-    ignore_changes = [source_code_hash]
   }
 }
 
