@@ -19,7 +19,7 @@ on:
 env:
   AWS_REGION: us-east-1
   TERRAFORM_VERSION: latest
-  SKIP_IMPORT: true  # Set to false to enable resource imports (slower but safer)
+  SKIP_IMPORT: false  # Temporarily false to import existing resources, then set to true for fast deployments
 
 # Cancel in-progress runs when a new commit is pushed
 concurrency:
