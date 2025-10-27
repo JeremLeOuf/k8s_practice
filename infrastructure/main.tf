@@ -37,7 +37,8 @@ resource "aws_dynamodb_table" "knowledge_base" {
   }
 
   lifecycle {
-    ignore_changes = [name]
+    # Ignore changes to name and tags during import
+    ignore_changes = [name, tags, tags_all]
   }
 }
 
@@ -59,7 +60,8 @@ resource "aws_iam_role" "lambda_role" {
   })
 
   lifecycle {
-    ignore_changes = [name]
+    # Ignore changes to name and tags during import
+    ignore_changes = [name, tags, tags_all, permissions_boundary, max_session_duration]
   }
 }
 

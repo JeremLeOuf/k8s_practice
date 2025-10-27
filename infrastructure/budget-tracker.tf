@@ -26,7 +26,8 @@ resource "aws_dynamodb_table" "budget_tracker" {
   }
 
   lifecycle {
-    ignore_changes = [name]
+    # Ignore changes to name and tags during import
+    ignore_changes = [name, tags, tags_all]
   }
 }
 
@@ -120,7 +121,8 @@ resource "aws_iam_role" "budget_tracker_lambda" {
   })
 
   lifecycle {
-    ignore_changes = [name]
+    # Ignore changes to name and tags during import
+    ignore_changes = [name, tags, tags_all, permissions_boundary, max_session_duration]
   }
 }
 
