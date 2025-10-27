@@ -46,8 +46,13 @@ build/
 
 # Secrets
 .env
+.env.*
 secrets/
 *.secret
+
+# Grafana AWS credentials
+grafana/.env.aws
+grafana/.env
 
 # Lambda packages
 lambda-functions/**/function.zip
