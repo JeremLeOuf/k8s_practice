@@ -266,10 +266,10 @@ jobs:
         echo "📡 API Gateway URL: $API_URL"
         
         # Update app.html with the API Gateway URL
-        sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/app.html
+        sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/knowledge-base/app.html
         
         # Update budget.html with the API Gateway URL
-        sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/budget.html
+        sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/budget-tracker/budget.html
         
         echo "✅ Frontend configured with API URL: $API_URL"
     
@@ -352,9 +352,10 @@ jobs:
         if [ "$SUCCESS" = "true" ]; then
           echo "🎉 Deployment verified successful!"
           echo "🌐 CDN URL: $CDN_URL"
-          echo "📚 Knowledge Base: $CDN_URL/app.html"
-          echo "📊 Budget Tracker: $CDN_URL/budget.html"
-          echo "📊 Grafana: $CDN_URL/grafana.html"
+          echo "🏠 Home Hub: $CDN_URL/index.html"
+          echo "📚 Knowledge Base: $CDN_URL/knowledge-base/app.html"
+          echo "📊 Budget Tracker: $CDN_URL/budget-tracker/budget.html"
+          echo "📊 Grafana: $CDN_URL/knowledge-base/grafana.html"
           exit 0
         else
           echo ""
