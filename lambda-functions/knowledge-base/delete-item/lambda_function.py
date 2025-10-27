@@ -12,8 +12,12 @@ def handler(event, context):
     Lambda function to delete an item from DynamoDB
     """
     try:
+        # Debug: log the event structure
+        print(f"Event received: {json.dumps(event)}")
+        
         # Get item ID from path parameters
-        item_id = event.get('pathParameters', {}).get('id')
+        path_params = event.get('pathParameters', {})
+        item_id = path_params.get('id') if path_params else None
         
         if not item_id:
             return {
@@ -23,7 +27,8 @@ def handler(event, context):
                     'Access-Control-Allow-Origin': '*'
                 },
                 'body': json.dumps({
-                    'error': 'Missing item ID'
+                    'error': 'Missing item ID',
+                    'event': event
                 })
             }
         
@@ -58,7 +63,11 @@ def handler(event, context):
         }
     
     except Exception as e:
-        print(f"Error: {str(e)}")
+        error_msg = f"Error: {str(e)}"
+        import traceback
+        error_details = traceback.format_exc()
+        print(error_msg)
+        print(error_details)
         return {
             'statusCode': 500,
             'headers': {
@@ -66,7 +75,8 @@ def handler(event, context):
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
-                'error': str(e)
+                'error': error_msg,
+                'details': error_details
             })
         }
 

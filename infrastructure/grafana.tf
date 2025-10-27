@@ -32,7 +32,8 @@ resource "aws_iam_policy" "grafana_cloudwatch_access" {
   })
 
   lifecycle {
-    ignore_changes = [name]
+    # Ignore changes to name, tags, description, and path during import
+    ignore_changes = [name, tags, tags_all, description, path]
   }
 }
 
@@ -41,7 +42,8 @@ resource "aws_iam_user" "grafana_cloudwatch" {
   path = "/monitoring/"
 
   lifecycle {
-    ignore_changes = [name]
+    # Ignore changes to name, tags, and path during import
+    ignore_changes = [name, tags, tags_all, path, permissions_boundary]
   }
 }
 

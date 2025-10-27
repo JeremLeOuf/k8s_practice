@@ -26,7 +26,8 @@ resource "aws_dynamodb_table" "budget_tracker" {
   }
 
   lifecycle {
-    ignore_changes = [name]
+    # Ignore changes to name and tags during import
+    ignore_changes = [name, tags, tags_all]
   }
 }
 
@@ -120,7 +121,8 @@ resource "aws_iam_role" "budget_tracker_lambda" {
   })
 
   lifecycle {
-    ignore_changes = [name]
+    # Ignore changes to name and tags during import
+    ignore_changes = [name, tags, tags_all, permissions_boundary, max_session_duration]
   }
 }
 
@@ -159,13 +161,27 @@ resource "aws_lambda_function" "get_balance" {
   }
 }
 
+# API Gateway for Budget Tracker
+resource "aws_api_gateway_rest_api" "budget_tracker_api" {
+  name        = "budget-tracker-api"
+  description = "Budget Tracker API"
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # Lambda Permissions for API Gateway
 resource "aws_lambda_permission" "api_gateway_add_transaction" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.add_transaction.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.budget_tracker_api.execution_arn}/*/*"
 
   lifecycle {
     create_before_destroy = false
@@ -177,7 +193,7 @@ resource "aws_lambda_permission" "api_gateway_get_balance" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.get_balance.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.budget_tracker_api.execution_arn}/*/*"
 
   lifecycle {
     create_before_destroy = false
@@ -186,27 +202,27 @@ resource "aws_lambda_permission" "api_gateway_get_balance" {
 
 # API Gateway Resources for Budget Tracker
 resource "aws_api_gateway_resource" "budget_transactions" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
+  parent_id   = aws_api_gateway_rest_api.budget_tracker_api.root_resource_id
   path_part   = "transactions"
 }
 
 resource "aws_api_gateway_resource" "budget_balance" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
+  parent_id   = aws_api_gateway_rest_api.budget_tracker_api.root_resource_id
   path_part   = "balance"
 }
 
 # API Gateway: POST /transactions
 resource "aws_api_gateway_method" "add_transaction" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
+  rest_api_id   = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id   = aws_api_gateway_resource.budget_transactions.id
   http_method   = "POST"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "add_transaction" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id = aws_api_gateway_resource.budget_transactions.id
   http_method = aws_api_gateway_method.add_transaction.http_method
 
@@ -217,14 +233,14 @@ resource "aws_api_gateway_integration" "add_transaction" {
 
 # API Gateway: GET /balance
 resource "aws_api_gateway_method" "get_balance" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
+  rest_api_id   = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id   = aws_api_gateway_resource.budget_balance.id
   http_method   = "GET"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "get_balance" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id = aws_api_gateway_resource.budget_balance.id
   http_method = aws_api_gateway_method.get_balance.http_method
 
@@ -235,14 +251,14 @@ resource "aws_api_gateway_integration" "get_balance" {
 
 # CORS: OPTIONS for /transactions
 resource "aws_api_gateway_method" "options_transactions" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
+  rest_api_id   = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id   = aws_api_gateway_resource.budget_transactions.id
   http_method   = "OPTIONS"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "options_transactions" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id = aws_api_gateway_resource.budget_transactions.id
   http_method = aws_api_gateway_method.options_transactions.http_method
   type        = "MOCK"
@@ -253,7 +269,7 @@ resource "aws_api_gateway_integration" "options_transactions" {
 }
 
 resource "aws_api_gateway_method_response" "options_transactions" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id = aws_api_gateway_resource.budget_transactions.id
   http_method = aws_api_gateway_method.options_transactions.http_method
   status_code = "200"
@@ -266,7 +282,7 @@ resource "aws_api_gateway_method_response" "options_transactions" {
 }
 
 resource "aws_api_gateway_integration_response" "options_transactions" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id = aws_api_gateway_resource.budget_transactions.id
   http_method = aws_api_gateway_method.options_transactions.http_method
   status_code = aws_api_gateway_method_response.options_transactions.status_code
@@ -284,14 +300,14 @@ resource "aws_api_gateway_integration_response" "options_transactions" {
 
 # CORS: OPTIONS for /balance
 resource "aws_api_gateway_method" "options_balance" {
-  rest_api_id   = aws_api_gateway_rest_api.api.id
+  rest_api_id   = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id   = aws_api_gateway_resource.budget_balance.id
   http_method   = "OPTIONS"
   authorization = "NONE"
 }
 
 resource "aws_api_gateway_integration" "options_balance" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id = aws_api_gateway_resource.budget_balance.id
   http_method = aws_api_gateway_method.options_balance.http_method
   type        = "MOCK"
@@ -302,7 +318,7 @@ resource "aws_api_gateway_integration" "options_balance" {
 }
 
 resource "aws_api_gateway_method_response" "options_balance" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id = aws_api_gateway_resource.budget_balance.id
   http_method = aws_api_gateway_method.options_balance.http_method
   status_code = "200"
@@ -315,7 +331,7 @@ resource "aws_api_gateway_method_response" "options_balance" {
 }
 
 resource "aws_api_gateway_integration_response" "options_balance" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
   resource_id = aws_api_gateway_resource.budget_balance.id
   http_method = aws_api_gateway_method.options_balance.http_method
   status_code = aws_api_gateway_method_response.options_balance.status_code
@@ -331,6 +347,75 @@ resource "aws_api_gateway_integration_response" "options_balance" {
   ]
 }
 
+# Deploy Budget Tracker API Gateway
+resource "aws_api_gateway_deployment" "budget_tracker_api" {
+  depends_on = [
+    aws_api_gateway_method.add_transaction,
+    aws_api_gateway_integration.add_transaction,
+    aws_api_gateway_method.get_balance,
+    aws_api_gateway_integration.get_balance,
+    aws_api_gateway_method.options_transactions,
+    aws_api_gateway_integration.options_transactions,
+    aws_api_gateway_method.options_balance,
+    aws_api_gateway_integration.options_balance
+  ]
+
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
+
+  triggers = {
+    redeployment = sha1(jsonencode([
+      aws_api_gateway_resource.budget_transactions.id,
+      aws_api_gateway_resource.budget_balance.id
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# API Gateway Stage for Budget Tracker
+resource "aws_api_gateway_stage" "budget_tracker_prod" {
+  deployment_id = aws_api_gateway_deployment.budget_tracker_api.id
+  rest_api_id   = aws_api_gateway_rest_api.budget_tracker_api.id
+  stage_name    = "prod"
+
+  lifecycle {
+    create_before_destroy = false
+  }
+}
+
+# CORS Gateway Response for Budget Tracker API
+resource "aws_api_gateway_gateway_response" "budget_tracker_cors" {
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
+  response_type = "DEFAULT_4XX"
+
+  response_templates = {
+    "application/json" = "{\"message\": $context.error.messageString}"
+  }
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS'"
+  }
+}
+
+resource "aws_api_gateway_gateway_response" "budget_tracker_cors_5xx" {
+  rest_api_id = aws_api_gateway_rest_api.budget_tracker_api.id
+  response_type = "DEFAULT_5XX"
+
+  response_templates = {
+    "application/json" = "{\"message\": $context.error.messageString}"
+  }
+
+  response_parameters = {
+    "gatewayresponse.header.Access-Control-Allow-Origin" = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Headers" = "'*'"
+    "gatewayresponse.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS'"
+  }
+}
+
 # Outputs
 output "budget_tracker_table_name" {
   value = aws_dynamodb_table.budget_tracker.name
@@ -342,11 +427,11 @@ output "budget_alerts_topic_arn" {
 
 output "budget_tracker_api_url" {
   description = "The Budget Tracker API URL"
-  value       = "${aws_api_gateway_stage.prod.invoke_url}/transactions"
+  value       = "${aws_api_gateway_stage.budget_tracker_prod.invoke_url}/transactions"
 }
 
 output "budget_balance_api_url" {
   description = "The Budget Balance API URL"
-  value       = "${aws_api_gateway_stage.prod.invoke_url}/balance"
+  value       = "${aws_api_gateway_stage.budget_tracker_prod.invoke_url}/balance"
 }
 
