@@ -1,8 +1,11 @@
 # Locals for computed values
 locals {
-  # Extract hostname from API Gateway invoke URL
+  # Extract hostname from Knowledge Base API Gateway invoke URL
   # Example: https://abc123.execute-api.us-east-1.amazonaws.com/prod -> abc123.execute-api.us-east-1.amazonaws.com
-  api_gateway_hostname = element(split("/", replace(aws_api_gateway_stage.prod.invoke_url, "https://", "")), 0)
+  pkb_api_gateway_hostname = element(split("/", replace(aws_api_gateway_stage.prod.invoke_url, "https://", "")), 0)
+  
+  # Extract hostname from Budget Tracker API Gateway invoke URL
+  budget_tracker_api_gateway_hostname = element(split("/", replace(aws_api_gateway_stage.budget_tracker_prod.invoke_url, "https://", "")), 0)
 }
 
 # S3 Bucket for Static Website Hosting
@@ -100,7 +103,7 @@ resource "aws_s3_bucket_policy" "frontend" {
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "frontend" {
   count  = var.enable_cloudfront ? 1 : 0
-  depends_on = [aws_s3_bucket.frontend, aws_api_gateway_stage.prod]
+  depends_on = [aws_s3_bucket.frontend, aws_api_gateway_stage.prod, aws_api_gateway_stage.budget_tracker_prod]
 
   # S3 Origin for static files
   origin {
@@ -112,10 +115,24 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 
-  # API Gateway Origin for /items, /transactions, /balance
+  # Knowledge Base API Gateway Origin for /items
   origin {
-    domain_name = local.api_gateway_hostname
-    origin_id   = "api-gateway"
+    domain_name = local.pkb_api_gateway_hostname
+    origin_id   = "pkb-api-gateway"
+    origin_path = "/prod"
+
+    custom_origin_config {
+      http_port              = 443
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  # Budget Tracker API Gateway Origin for /transactions, /balance
+  origin {
+    domain_name = local.budget_tracker_api_gateway_hostname
+    origin_id   = "budget-tracker-api-gateway"
     origin_path = "/prod"
 
     custom_origin_config {
@@ -154,12 +171,13 @@ resource "aws_cloudfront_distribution" "frontend" {
     compress               = false # Disable compression to speed up
   }
 
-  # Behavior for /items/* endpoints (includes /items and /items/{id})  
+  # Behavior for /items/* endpoints (includes /items and /items/{id})
+  # Routes to Knowledge Base API Gateway
   ordered_cache_behavior {
     path_pattern     = "/items*"
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "api-gateway"
+    target_origin_id = "pkb-api-gateway"
 
     forwarded_values {
       query_string = true
@@ -177,11 +195,12 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   # Behavior for /transactions endpoint
+  # Routes to Budget Tracker API Gateway
   ordered_cache_behavior {
     path_pattern     = "/transactions"
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "api-gateway"
+    target_origin_id = "budget-tracker-api-gateway"
 
     forwarded_values {
       query_string = true
@@ -199,11 +218,12 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   # Behavior for /balance endpoint
+  # Routes to Budget Tracker API Gateway
   ordered_cache_behavior {
     path_pattern     = "/balance"
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "api-gateway"
+    target_origin_id = "budget-tracker-api-gateway"
 
     forwarded_values {
       query_string = true

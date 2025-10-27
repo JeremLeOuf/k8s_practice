@@ -385,14 +385,6 @@ resource "aws_api_gateway_deployment" "api" {
     aws_api_gateway_integration.options_items,
     aws_api_gateway_method.options_item,
     aws_api_gateway_integration.options_item,
-    aws_api_gateway_method.add_transaction,
-    aws_api_gateway_integration.add_transaction,
-    aws_api_gateway_method.get_balance,
-    aws_api_gateway_integration.get_balance,
-    aws_api_gateway_method.options_transactions,
-    aws_api_gateway_integration.options_transactions,
-    aws_api_gateway_method.options_balance,
-    aws_api_gateway_integration.options_balance,
     aws_api_gateway_gateway_response.cors,
     aws_api_gateway_gateway_response.cors_5xx
   ]
@@ -418,6 +410,10 @@ resource "aws_api_gateway_stage" "prod" {
   deployment_id = aws_api_gateway_deployment.api.id
   rest_api_id   = aws_api_gateway_rest_api.api.id
   stage_name    = "prod"
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # CORS Gateway Response for better CORS handling
