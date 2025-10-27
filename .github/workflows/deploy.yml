@@ -426,12 +426,24 @@ jobs:
         terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access || true
         terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch || true
         terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base || true
+        
+        # Import API Gateway if it exists
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`pkb-api`].id' --output text 2>/dev/null || echo "")
+        if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
+          terraform import aws_api_gateway_rest_api.api "$API_ID" || true
+        fi
+        
+        echo "📋 Resources in state:"
+        terraform state list
       continue-on-error: true
     
-    - name: Cleanup AWS Resources
+    - name: Cleanup AWS Resources (Before Destroy)
       working-directory: .
       run: |
-        BUCKET=$(terraform output -raw frontend_bucket_name 2>/dev/null || echo "pkb-frontend-personal-knowledge-base")
+        echo "🧹 Cleaning up AWS resources BEFORE terraform destroy..."
+        chmod +x ./scripts/cleanup-aws-resources.sh
+        BUCKET=$(cd infrastructure && terraform output -raw frontend_bucket_name 2>/dev/null || echo "pkb-frontend-personal-knowledge-base")
+        echo "Using bucket: $BUCKET"
         ./scripts/cleanup-aws-resources.sh "$BUCKET"
       continue-on-error: true
     
@@ -443,14 +455,37 @@ jobs:
     - name: Force Cleanup (if needed)
       if: failure()
       run: |
-        echo "🧹 Force cleaning remaining resources..."
+        echo "🧹 Force cleaning remaining resources after failed destroy..."
         export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
         
+        echo "Cleaning S3 bucket..."
+        # Try to empty and delete S3 bucket
+        ./scripts/cleanup-aws-resources.sh "pkb-frontend-personal-knowledge-base" || echo "S3 cleanup failed"
+        
+        echo "Cleaning IAM resources..."
+        # Detach all policies from user
+        aws iam list-attached-user-policies --user-name pkb-grafana-cloudwatch --query 'AttachedPolicies[].PolicyArn' --output text 2>/dev/null | \
+          while read -r policy_arn; do
+            if [ -n "$policy_arn" ]; then
+              aws iam detach-user-policy --user-name pkb-grafana-cloudwatch --policy-arn "$policy_arn" 2>/dev/null || true
+            fi
+          done
+        
+        # Delete access keys
+        aws iam list-access-keys --user-name pkb-grafana-cloudwatch --query 'AccessKeyMetadata[].AccessKeyId' --output text 2>/dev/null | \
+          while read -r key_id; do
+            if [ -n "$key_id" ]; then
+              aws iam delete-access-key --user-name pkb-grafana-cloudwatch --access-key-id "$key_id" 2>/dev/null || true
+            fi
+          done
+        
         # Try to delete policy manually
-        aws iam delete-policy --policy-arn "arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access" 2>/dev/null || echo "Policy already deleted"
+        aws iam delete-policy --policy-arn "arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access" 2>/dev/null || echo "Policy already deleted or still attached"
         
         # Try to delete user manually
-        aws iam delete-user --user-name pkb-grafana-cloudwatch 2>/dev/null || echo "User already deleted"
+        aws iam delete-user --user-name pkb-grafana-cloudwatch 2>/dev/null || echo "User already deleted or still has attachments"
+        
+        echo "✅ Force cleanup completed"
 
   notify:
     name: Notify Deployment

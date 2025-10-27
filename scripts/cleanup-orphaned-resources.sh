@@ -88,7 +88,7 @@ fi
 
 echo ""
 echo "=== CLEANING UP CLOUDWATCH LOG GROUPS ==="
-LOG_GROUPS=$(aws logs describe-log-groups --query 'logGroups[?contains(logGroupName, `/aws/lambda/pkb`) || contains(logGroupName, `/aws/lambda/budget`)].logGroupName' --output text 2>/dev/null || echo "")
+LOG_GROUPS=$(aws logs describe-log-groups --query 'logGroups[?contains(logGroupName, `/aws/lambda/pkb`) || contains(logGroupName, `/aws/lambda/budget`) || contains(logGroupName, `/aws/apigateway`)].logGroupName' --output text 2>/dev/null || echo "")
 
 if [ -n "$LOG_GROUPS" ]; then
   for LOG_GROUP in $LOG_GROUPS; do
@@ -97,6 +97,37 @@ if [ -n "$LOG_GROUPS" ]; then
   done
 else
   echo "✅ No CloudWatch log groups to clean up"
+fi
+
+echo ""
+echo "=== CLEANING UP API GATEWAY ==="
+APIS=$(aws apigateway get-rest-apis --query 'items[*].[name,id]' --output text 2>/dev/null || echo "")
+
+if [ -n "$APIS" ] && [ "$APIS" != "None" ]; then
+  echo "$APIS" | while read -r NAME ID; do
+    echo "🔍 Found API Gateway: $NAME ($ID)"
+    
+    # Delete all stages first
+    echo "🗑️  Deleting stages..."
+    STAGES=$(aws apigateway get-stages --rest-api-id "$ID" --query 'item[*].stageName' --output text 2>/dev/null || echo "")
+    for STAGE in $STAGES; do
+      echo "  Deleting stage: $STAGE"
+      aws apigateway delete-stage --rest-api-id "$ID" --stage-name "$STAGE" 2>/dev/null || true
+    done
+    
+    # Delete all models
+    echo "🗑️  Deleting models..."
+    aws apigateway get-models --rest-api-id "$ID" --query 'items[*].name' --output text 2>/dev/null | \
+      while read -r MODEL; do
+        aws apigateway delete-model --rest-api-id "$ID" --model-name "$MODEL" 2>/dev/null || true
+      done
+    
+    # Finally delete the API Gateway
+    echo "🗑️  Deleting API Gateway: $ID"
+    aws apigateway delete-rest-api --rest-api-id "$ID" 2>/dev/null || echo "⚠️  Cannot delete API Gateway (may need to delete resources first)"
+  done
+else
+  echo "✅ No API Gateway APIs to clean up"
 fi
 
 echo ""
