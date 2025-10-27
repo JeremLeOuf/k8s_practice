@@ -14,8 +14,15 @@ def handler(event, context):
     Lambda function to create a new item in DynamoDB
     """
     try:
-        # Parse request body
-        body = json.loads(event.get('body', '{}'))
+        # Debug: log the event structure
+        print(f"Event received: {json.dumps(event)}")
+        
+        # Parse request body - handle different event structures
+        body_str = event.get('body') or '{}'
+        if isinstance(body_str, str):
+            body = json.loads(body_str)
+        else:
+            body = body_str
         
         # Validate required fields
         if 'title' not in body or 'content' not in body:
@@ -60,7 +67,11 @@ def handler(event, context):
         }
     
     except Exception as e:
-        print(f"Error: {str(e)}")
+        error_msg = f"Error: {str(e)}"
+        import traceback
+        error_details = traceback.format_exc()
+        print(error_msg)
+        print(error_details)
         return {
             'statusCode': 500,
             'headers': {
@@ -68,7 +79,8 @@ def handler(event, context):
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
-                'error': str(e)
+                'error': error_msg,
+                'details': error_details
             })
         }
 

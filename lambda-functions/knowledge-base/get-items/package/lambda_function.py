@@ -13,6 +13,9 @@ def handler(event, context):
     Lambda function to get all items from DynamoDB
     """
     try:
+        # Debug: log the event structure
+        print(f"Event received: {json.dumps(event)}")
+        
         # Scan table to get all items
         response = table.scan()
         
@@ -36,7 +39,11 @@ def handler(event, context):
         }
     
     except Exception as e:
-        print(f"Error: {str(e)}")
+        error_msg = f"Error: {str(e)}"
+        import traceback
+        error_details = traceback.format_exc()
+        print(error_msg)
+        print(error_details)
         return {
             'statusCode': 500,
             'headers': {
@@ -44,7 +51,8 @@ def handler(event, context):
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
-                'error': str(e)
+                'error': error_msg,
+                'details': error_details
             })
         }
 
