@@ -322,6 +322,13 @@ jobs:
         echo "⏭️  Frontend files unchanged - skipping deployment"
         echo "✅ Previous frontend deployment remains active"
     
+    - name: Setup Grafana CloudWatch Credentials
+      run: |
+        echo "🔧 Setting up Grafana CloudWatch credentials..."
+        chmod +x ./scripts/setup-grafana-cloudwatch-datasource.sh
+        ./scripts/setup-grafana-cloudwatch-datasource.sh || echo "⚠️ Failed to setup credentials (may already exist)"
+      continue-on-error: true
+    
     - name: Get Frontend URL
       working-directory: ./infrastructure
       run: |
