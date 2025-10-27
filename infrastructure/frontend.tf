@@ -1,3 +1,10 @@
+# Locals for computed values
+locals {
+  # Extract hostname from API Gateway invoke URL
+  # Example: https://abc123.execute-api.us-east-1.amazonaws.com/prod -> abc123.execute-api.us-east-1.amazonaws.com
+  api_gateway_hostname = element(split("/", replace(aws_api_gateway_stage.prod.invoke_url, "https://", "")), 0)
+}
+
 # S3 Bucket for Static Website Hosting
 resource "aws_s3_bucket" "frontend" {
   bucket = "pkb-frontend-${var.project_name}"
@@ -107,7 +114,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 
   # API Gateway Origin for /items, /transactions, /balance
   origin {
-    domain_name = replace(replace(aws_api_gateway_stage.prod.invoke_url, "/https?://", ""), "/prod.*", "")
+    domain_name = local.api_gateway_hostname
     origin_id   = "api-gateway"
     origin_path = "/prod"
 
