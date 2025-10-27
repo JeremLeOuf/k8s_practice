@@ -163,7 +163,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Accept", "Content-Type", "Host", "Origin", "Referer"]
+      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Host", "Origin", "Referer", "User-Agent"]
       cookies {
         forward = "none"
       }
@@ -185,7 +185,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Accept", "Content-Type", "Host", "Origin", "Referer"]
+      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Host", "Origin", "Referer", "User-Agent"]
       cookies {
         forward = "none"
       }
@@ -207,7 +207,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Accept", "Content-Type", "Host", "Origin", "Referer"]
+      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Host", "Origin", "Referer", "User-Agent"]
       cookies {
         forward = "none"
       }
