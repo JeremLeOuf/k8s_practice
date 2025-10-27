@@ -23,8 +23,8 @@ variable "alert_email" {
 }
 
 variable "enable_cloudfront" {
-  description = "Enable CloudFront distribution (disabled for faster deployments)"
+  description = "Enable CloudFront distribution to serve static files and API endpoints"
   type        = bool
-  default     = false
+  default     = true
 }
 

@@ -241,21 +241,19 @@
     </div>
 
     <script>
-        // Get API URL from localStorage or default (will be replaced by CI/CD)
-        const DEFAULT_API_URL = 'https://gsb6x7ntmb.execute-api.us-east-1.amazonaws.com/prod';
-        let apiUrl = localStorage.getItem('apiUrl') || DEFAULT_API_URL;
+        // Use relative URLs since CloudFront will serve both frontend and API
+        // This automatically works with CloudFront's origin behaviors
+        const apiUrl = window.location.origin;
         
         // Set the input field value
         const apiUrlInput = document.getElementById('apiUrlInput');
         apiUrlInput.value = apiUrl;
         
         // Set the displayed default URL
-        document.getElementById('defaultApiUrl').textContent = DEFAULT_API_URL !== 'https://gsb6x7ntmb.execute-api.us-east-1.amazonaws.com/prod' ? DEFAULT_API_URL : 'To be configured';
+        document.getElementById('defaultApiUrl').textContent = apiUrl;
 
         function saveApiUrl() {
-            apiUrl = document.getElementById('apiUrlInput').value;
-            localStorage.setItem('apiUrl', apiUrl);
-            showAlert('API URL saved!', 'success');
+            showAlert('API URL configured automatically via CloudFront', 'success');
         }
 
         function showAlert(message, type = 'success') {

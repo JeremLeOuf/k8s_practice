@@ -299,10 +299,9 @@
     </div>
 
     <script>
-        // Get API URL from parent API Gateway
-        // The budget tracker uses the same API Gateway as the knowledge base
-        const API_BASE_URL = 'https://gsb6x7ntmb.execute-api.us-east-1.amazonaws.com/prod';
-        const BUDGET_API_URL = API_BASE_URL;
+        // Use relative URLs since CloudFront will serve both frontend and API
+        // This automatically works with CloudFront's origin behaviors
+        const BUDGET_API_URL = window.location.origin;
 
         // Load balance and transactions on page load
         document.addEventListener('DOMContentLoaded', function() {

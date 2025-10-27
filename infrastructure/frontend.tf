@@ -93,14 +93,28 @@ resource "aws_s3_bucket_policy" "frontend" {
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "frontend" {
   count  = var.enable_cloudfront ? 1 : 0
-  depends_on = [aws_s3_bucket.frontend]
+  depends_on = [aws_s3_bucket.frontend, aws_api_gateway_stage.prod]
 
+  # S3 Origin for static files
   origin {
     domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id   = "S3-${aws_s3_bucket.frontend.bucket}"
 
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.frontend[0].cloudfront_access_identity_path
+    }
+  }
+
+  # API Gateway Origin for /items, /transactions, /balance
+  origin {
+    domain_name = replace(aws_api_gateway_stage.prod.invoke_url, "/https?://", "")
+    origin_id   = "api-gateway"
+
+    custom_origin_config {
+      http_port              = 443
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
 
@@ -112,6 +126,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   # Wait for deployment (faster than auto, but still takes ~15min first time)
   wait_for_deployment = false
 
+  # Default behavior for static files (S3)
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD"]
@@ -129,6 +144,72 @@ resource "aws_cloudfront_distribution" "frontend" {
     default_ttl            = 0 # No caching for faster updates
     max_ttl                = 0
     compress               = false # Disable compression to speed up
+  }
+
+  # Behavior for /items/* endpoints (includes /items and /items/{id})
+  ordered_cache_behavior {
+    path_pattern     = "/items*"
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "api-gateway"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Accept", "Content-Type", "Host", "Origin", "Referer"]
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 0
+    max_ttl                = 0
+    compress               = true
+  }
+
+  # Behavior for /transactions endpoint
+  ordered_cache_behavior {
+    path_pattern     = "/transactions"
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "api-gateway"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Accept", "Content-Type", "Host", "Origin", "Referer"]
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 0
+    max_ttl                = 0
+    compress               = true
+  }
+
+  # Behavior for /balance endpoint
+  ordered_cache_behavior {
+    path_pattern     = "/balance"
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "api-gateway"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Accept", "Content-Type", "Host", "Origin", "Referer"]
+      cookies {
+        forward = "none"
+      }
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 0
+    max_ttl                = 0
+    compress               = true
   }
 
   restrictions {

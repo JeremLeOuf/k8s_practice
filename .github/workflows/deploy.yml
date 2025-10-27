@@ -20,6 +20,7 @@ env:
   AWS_REGION: us-east-1
   TERRAFORM_VERSION: latest
   SKIP_IMPORT: false  # Set to false ONCE to import existing resources, then change to true
+  ENABLE_CLOUDFRONT: true  # Enable CloudFront for serving both static files and API
 
 # Cancel in-progress runs when a new commit is pushed
 concurrency:
@@ -72,7 +73,7 @@ jobs:
     
     - name: Terraform Plan
       working-directory: ./infrastructure
-      run: terraform plan -detailed-exitcode
+      run: terraform plan -var="enable_cloudfront=${{ env.ENABLE_CLOUDFRONT }}" -detailed-exitcode
       continue-on-error: true
 
   deploy:
@@ -228,14 +229,14 @@ jobs:
       working-directory: ./infrastructure
       run: |
         echo "📋 Running terraform plan to see what will change..."
-        terraform plan -refresh=false
+        terraform plan -var="enable_cloudfront=${{ env.ENABLE_CLOUDFRONT }}" -refresh=false
       continue-on-error: true
     
     - name: Terraform Plan (for optimization checks)
       working-directory: ./infrastructure
       run: |
         echo "📋 Running terraform plan for optimization checks..."
-        terraform plan -out=tfplan -refresh=false -parallelism=10 > plan.txt 2>&1 || true
+        terraform plan -var="enable_cloudfront=${{ env.ENABLE_CLOUDFRONT }}" -out=tfplan -refresh=false -parallelism=10 > plan.txt 2>&1 || true
         cat plan.txt
         
         # Check if CloudFront will be created (not just updated)
@@ -256,7 +257,7 @@ jobs:
           time terraform apply tfplan
           rm -f plan.txt
         else
-          time terraform apply -auto-approve -refresh=false -parallelism=10
+          time terraform apply -var="enable_cloudfront=${{ env.ENABLE_CLOUDFRONT }}" -auto-approve -refresh=false -parallelism=10
         fi
         echo "✅ Completed terraform apply at $(date)"
     
@@ -275,23 +276,12 @@ jobs:
         fi
       continue-on-error: true
 
-    - name: Configure Frontend with API URL
+    - name: Skip Frontend API Configuration (CloudFront handles it)
       if: env.FRONTEND_CHANGED == 'true' || github.event_name == 'workflow_dispatch'
       working-directory: ./infrastructure
       run: |
-        echo "⚙️ Configuring frontend with API Gateway URL..."
-        
-        # Get API Gateway URL from Terraform output
-        API_URL=$(terraform output -raw api_gateway_url)
-        echo "📡 API Gateway URL: $API_URL"
-        
-        # Update app.html with the API Gateway URL
-        sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/knowledge-base/app.html
-        
-        # Update budget.html with the API Gateway URL
-        sed -i "s|{{API_GATEWAY_URL}}|$API_URL|g" ../frontend/budget-tracker/budget.html
-        
-        echo "✅ Frontend configured with API URL: $API_URL"
+        echo "✅ Frontend uses relative URLs - CloudFront will route API calls automatically"
+        echo "🌐 API endpoints will be accessible through CloudFront distribution"
     
     - name: Deploy Frontend to S3
       if: env.FRONTEND_CHANGED == 'true' || github.event_name == 'workflow_dispatch'
