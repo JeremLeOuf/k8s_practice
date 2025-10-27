@@ -70,7 +70,18 @@ serverless_app/
 
 ## 🚀 Quick Start
 
-### 1. Deploy Backend (API)
+### Deploy Everything (One Command)
+
+```bash
+# Deploy entire application
+./deploy.sh
+```
+
+This deploys: Backend (Lambda, API Gateway, DynamoDB) + Frontend (S3) + Budget Tracker + Grafana
+
+### Manual Deployment (Step by Step)
+
+#### 1. Deploy Backend (API)
 
 ```bash
 # Build Lambda functions
