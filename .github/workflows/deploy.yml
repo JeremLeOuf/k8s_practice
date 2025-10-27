@@ -487,25 +487,19 @@ jobs:
     
     - name: Success
       if: needs.deploy.result == 'success'
-      working-directory: ./infrastructure
       run: |
         echo "✅ Deployment successful!"
         echo ""
         
-        # Get URLs
-        API_URL=$(terraform output -raw api_gateway_url || echo "N/A")
+        # Get API Gateway URL from deployed resources
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`pkb-api`].id' --output text --region us-east-1 2>/dev/null || echo "")
+        API_URL="https://${API_ID}.execute-api.us-east-1.amazonaws.com/prod"
         
-        # Check if CloudFront is enabled
-        ENABLE_CLOUDFRONT=$(terraform show -json 2>/dev/null | jq -r '.values.root_module.variable_values.enable_cloudfront // "false"' || echo "false")
+        # Get S3 bucket name
+        BUCKET_NAME=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'pkb-frontend')].Name" --output text --region us-east-1 2>/dev/null | head -1)
+        FRONTEND_URL="http://${BUCKET_NAME}.s3-website-us-east-1.amazonaws.com"
         
-        if [ "$ENABLE_CLOUDFRONT" = "true" ]; then
-          FRONTEND_URL=$(terraform output -raw frontend_cdn_url)
-          echo "🌐 Frontend (CloudFront): $FRONTEND_URL"
-        else
-          FRONTEND_URL=$(terraform output -raw frontend_s3_url)
-          echo "🌐 Frontend (S3 Website): $FRONTEND_URL"
-        fi
-        
+        echo "🌐 Frontend (S3 Website): $FRONTEND_URL"
         echo "🔗 API Gateway: $API_URL"
         echo ""
         echo "Applications:"
