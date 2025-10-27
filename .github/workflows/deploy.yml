@@ -185,6 +185,11 @@ jobs:
         terraform state show aws_iam_role.lambda_role &>/dev/null || terraform import aws_iam_role.lambda_role pkb-lambda-execution-role 2>/dev/null || echo "⚠️ Skipped"
         terraform state show aws_iam_role.budget_tracker_lambda &>/dev/null || terraform import aws_iam_role.budget_tracker_lambda budget-tracker-lambda-role 2>/dev/null || echo "⚠️ Skipped"
         
+        # IAM Role Policies
+        echo "📋 Importing IAM role policies..."
+        terraform state show aws_iam_role_policy.lambda_dynamodb &>/dev/null || echo "⚠️ Skipped lambda_dynamodb policy import (inline)"
+        terraform state show aws_iam_role_policy.budget_tracker_lambda &>/dev/null || echo "⚠️ Skipped budget_tracker_lambda policy import (inline)"
+        
         # IAM Policies
         echo "📝 Importing IAM policies..."
         terraform state show aws_iam_policy.grafana_cloudwatch_access &>/dev/null || terraform import aws_iam_policy.grafana_cloudwatch_access arn:aws:iam::$ACCOUNT_ID:policy/pkb-grafana-cloudwatch-access 2>/dev/null || echo "⚠️ Skipped"
@@ -192,6 +197,10 @@ jobs:
         # IAM User
         echo "👤 Importing IAM users..."
         terraform state show aws_iam_user.grafana_cloudwatch &>/dev/null || terraform import aws_iam_user.grafana_cloudwatch pkb-grafana-cloudwatch 2>/dev/null || echo "⚠️ Skipped"
+        
+        # IAM User Policy Attachments
+        echo "🔗 Importing IAM user policy attachments..."
+        terraform state show aws_iam_user_policy_attachment.grafana_cloudwatch &>/dev/null || echo "⚠️ Skipped policy attachment import"
         
         # S3 Bucket
         echo "🪣 Importing S3 bucket..."
