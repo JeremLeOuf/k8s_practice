@@ -77,6 +77,22 @@ resource "aws_iam_role_policy" "budget_tracker_lambda" {
           "sns:GetTopicAttributes"
         ]
         Resource = aws_sns_topic.budget_alerts.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:*:*:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt"
+        ]
+        Resource = "arn:aws:kms:*:*:key/*"
       }
     ]
   })
