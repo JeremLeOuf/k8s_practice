@@ -1,10 +1,12 @@
 import json
 import boto3
+import os
 from decimal import Decimal
 
 # DynamoDB client
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('PersonalKnowledgeBase')
+TABLE_NAME = os.environ.get('TABLE_NAME', 'PersonalKnowledgeBase')
+table = dynamodb.Table(TABLE_NAME)
 
 def handler(event, context):
     """
