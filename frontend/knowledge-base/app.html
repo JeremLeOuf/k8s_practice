@@ -198,18 +198,6 @@
             </div>
         </header>
 
-        <div class="config-section">
-            <h2>⚙️ Configuration</h2>
-            <div class="form-group">
-                <label for="apiUrlInput">API Gateway URL:</label>
-                <input type="text" id="apiUrlInput" placeholder="https://your-api-gateway-url.amazonaws.com/prod" />
-                <button onclick="saveApiUrl()" style="margin-top: 10px;">Save URL</button>
-            </div>
-            <p style="margin-top: 15px; color: #666; font-size: 0.9em;">
-                Default URL configured: <code id="defaultApiUrl">https://dfdfpzg3a8.execute-api.us-east-1.amazonaws.com/prod</code>
-            </p>
-        </div>
-
         <div id="alertContainer"></div>
 
         <div class="api-section">
@@ -244,17 +232,6 @@
         // Use relative URLs since CloudFront will serve both frontend and API
         // This automatically works with CloudFront's origin behaviors
         const apiUrl = window.location.origin;
-        
-        // Set the input field value
-        const apiUrlInput = document.getElementById('apiUrlInput');
-        apiUrlInput.value = apiUrl;
-        
-        // Set the displayed default URL
-        document.getElementById('defaultApiUrl').textContent = apiUrl;
-
-        function saveApiUrl() {
-            showAlert('API URL configured automatically via CloudFront', 'success');
-        }
 
         function showAlert(message, type = 'success') {
             const container = document.getElementById('alertContainer');
@@ -269,11 +246,6 @@
         }
 
         async function loadItems() {
-            if (!apiUrl) {
-                showAlert('Please set the API Gateway URL first!', 'error');
-                return;
-            }
-
             try {
                 const response = await fetch(`${apiUrl}/items`);
                 const data = await response.json();
@@ -325,11 +297,6 @@
 
         document.getElementById('createItemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-
-            if (!apiUrl) {
-                showAlert('Please set the API Gateway URL first!', 'error');
-                return;
-            }
 
             const title = document.getElementById('titleInput').value;
             const content = document.getElementById('contentInput').value;
