@@ -166,6 +166,10 @@ resource "aws_lambda_permission" "api_gateway_add_transaction" {
   function_name = aws_lambda_function.add_transaction.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 resource "aws_lambda_permission" "api_gateway_get_balance" {
@@ -174,6 +178,10 @@ resource "aws_lambda_permission" "api_gateway_get_balance" {
   function_name = aws_lambda_function.get_balance.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # API Gateway Resources for Budget Tracker

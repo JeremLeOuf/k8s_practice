@@ -129,6 +129,68 @@ done
 aws iam delete-user --user-name pkb-grafana-cloudwatch
 ```
 
+### Error 5: API Gateway Not Deleting
+
+**Error:**
+```
+Error: BadRequestException: Unable to delete rest api
+Error: BadRequestException: The REST API doesn't contain any models
+Error: BadRequestException: Cannot delete stage because it is currently in use
+```
+
+**Cause**: API Gateway has resources, stages, or CloudWatch logs preventing deletion.
+
+**Solution:**
+
+```bash
+# Get API Gateway ID
+API_ID=$(aws apigateway get-rest-apis --query "items[0].id" --output text)
+
+# Delete all stages first
+STAGES=$(aws apigateway get-stages --rest-api-id "$API_ID" --query 'item[*].stageName' --output text)
+for STAGE in $STAGES; do
+  aws apigateway delete-stage --rest-api-id "$API_ID" --stage-name "$STAGE"
+done
+
+# Delete all resources (except root)
+RESOURCES=$(aws apigateway get-resources --rest-api-id "$API_ID" --query 'items[?path!=`/`].id' --output text)
+for RESOURCE_ID in $RESOURCES; do
+  aws apigateway delete-resource --rest-api-id "$API_ID" --resource-id "$RESOURCE_ID"
+done
+
+# Delete API Gateway
+aws apigateway delete-rest-api --rest-api-id "$API_ID"
+
+# Delete CloudWatch log groups for API Gateway
+aws logs describe-log-groups --log-group-name-prefix "/aws/apigateway" --query 'logGroups[*].logGroupName' --output text | \
+  while read -r LOG_GROUP; do
+    aws logs delete-log-group --log-group-name "$LOG_GROUP"
+  done
+```
+
+### Error 6: Lambda Permissions Preventing API Gateway Deletion
+
+**Error:**
+```
+Error: Cannot delete API Gateway due to Lambda permissions
+```
+
+**Cause**: Lambda permissions created by Terraform are blocking API Gateway deletion.
+
+**Solution:**
+
+```bash
+# List all Lambda functions with API Gateway permissions
+aws lambda get-policy --function-name pkb-api-get-items --query 'Policy' --output text | jq '.Statement[] | select(.Principal.Service == "apigateway.amazonaws.com") | .Sid'
+
+# Remove permission (Terraform will handle this, but in case of issues)
+aws lambda remove-permission \
+  --function-name pkb-api-get-items \
+  --statement-id AllowExecutionFromAPIGateway
+```
+
+**Note**: With the lifecycle changes added to the Terraform config, Lambda permissions should be deleted first, then API Gateway.
+
 ## Complete Manual Cleanup Script
 
 ```bash
@@ -220,9 +282,29 @@ Most issues are caused by AWS resource dependencies. The solution is:
 1. Empty S3 bucket (all versions)
 2. Wait for CloudFront to disable
 3. Detach IAM policies
-4. Then run terraform destroy
+4. Delete API Gateway stages and resources
+5. Delete CloudWatch log groups (especially API Gateway logs)
+6. Remove Lambda permissions for API Gateway
+7. Then run terraform destroy
 
 The destroy workflow does all of this automatically.
+
+### Key Changes to Prevent API Gateway Orphan Issues
+
+Recent updates to the Terraform configuration include:
+
+1. **Lifecycle management** on `aws_api_gateway_rest_api` to ensure proper creation/deletion order
+2. **Lifecycle management** on all `aws_lambda_permission` resources to ensure they're deleted before API Gateway
+3. **Updated cleanup script** to handle API Gateway stages, models, and CloudWatch logs
+
+These changes ensure that when you run `terraform destroy`, resources are deleted in the correct order:
+1. Lambda permissions (delete first)
+2. Lambda functions
+3. API Gateway deployment
+4. API Gateway stage
+5. API Gateway resources
+6. API Gateway REST API (delete last)
+7. CloudWatch log groups
 
 ---
 

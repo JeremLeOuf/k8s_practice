@@ -166,6 +166,10 @@ resource "aws_api_gateway_rest_api" "api" {
   endpoint_configuration {
     types = ["REGIONAL"]
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # API Gateway: GET /items
@@ -198,6 +202,10 @@ resource "aws_lambda_permission" "api_gateway_get_items" {
   function_name = aws_lambda_function.get_items.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # API Gateway: POST /items
@@ -224,6 +232,10 @@ resource "aws_lambda_permission" "api_gateway_create_item" {
   function_name = aws_lambda_function.create_item.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # API Gateway: DELETE /items/{id}
@@ -256,6 +268,10 @@ resource "aws_lambda_permission" "api_gateway_delete_item" {
   function_name = aws_lambda_function.delete_item.function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*"
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 # CORS: OPTIONS for /items
