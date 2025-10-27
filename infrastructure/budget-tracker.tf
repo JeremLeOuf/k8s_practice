@@ -86,13 +86,6 @@ resource "aws_iam_role_policy" "budget_tracker_lambda" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:*:*:*:*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt"
-        ]
-        Resource = "arn:aws:kms:*:*:key/*"
       }
     ]
   })

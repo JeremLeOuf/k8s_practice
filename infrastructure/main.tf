@@ -95,13 +95,6 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:*:*:*:*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt"
-        ]
-        Resource = "arn:aws:kms:*:*:key/*"
       }
     ]
   })
