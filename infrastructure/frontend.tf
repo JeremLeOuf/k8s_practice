@@ -154,7 +154,7 @@ resource "aws_cloudfront_distribution" "frontend" {
     compress               = false # Disable compression to speed up
   }
 
-  # Behavior for /items/* endpoints (includes /items and /items/{id})
+  # Behavior for /items/* endpoints (includes /items and /items/{id})  
   ordered_cache_behavior {
     path_pattern     = "/items*"
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
@@ -163,7 +163,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Host", "Origin", "Referer", "User-Agent"]
+      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Origin", "Referer", "User-Agent"]
       cookies {
         forward = "none"
       }
@@ -185,7 +185,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Host", "Origin", "Referer", "User-Agent"]
+      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Origin", "Referer", "User-Agent"]
       cookies {
         forward = "none"
       }
@@ -207,7 +207,7 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     forwarded_values {
       query_string = true
-      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Host", "Origin", "Referer", "User-Agent"]
+      headers      = ["Accept", "Accept-Encoding", "Authorization", "Content-Type", "Origin", "Referer", "User-Agent"]
       cookies {
         forward = "none"
       }
