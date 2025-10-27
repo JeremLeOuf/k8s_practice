@@ -19,7 +19,6 @@ on:
 env:
   AWS_REGION: us-east-1
   TERRAFORM_VERSION: latest
-  SKIP_IMPORT: false  # Set to false ONCE to import existing resources, then change to true
   ENABLE_CLOUDFRONT: true  # Enable CloudFront for serving both static files and API
 
 # Cancel in-progress runs when a new commit is pushed
@@ -134,7 +133,6 @@ jobs:
           terraform-${{ runner.os }}-
     
     - name: Cleanup Old CloudFront Distributions
-      if: env.SKIP_IMPORT != 'true'
       run: |
         echo "🧹 Cleaning up old CloudFront distributions..."
         chmod +x scripts/cleanup-old-cloudfront.sh
@@ -142,7 +140,6 @@ jobs:
       continue-on-error: true
 
     - name: Ensure CloudFront is Enabled
-      if: env.SKIP_IMPORT != 'true'
       run: |
         echo "✅ Ensuring CloudFront distribution is enabled..."
         chmod +x scripts/ensure-cloudfront-enabled.sh
@@ -153,11 +150,11 @@ jobs:
       working-directory: ./infrastructure
       run: terraform init
     
-    - name: Import Existing Resources (Skip if in state)
-      if: env.SKIP_IMPORT != 'true'
+    - name: Import Existing Resources (if they exist)
       working-directory: ./infrastructure
       run: |
         echo "🔍 Checking and importing existing resources..."
+        echo "💡 This step will safely handle both new and existing deployments"
         export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
         
         # Lambda Functions (CRITICAL - prevents hanging!)
@@ -207,22 +204,27 @@ jobs:
         echo "🪣 Importing S3 bucket..."
         terraform state show aws_s3_bucket.frontend &>/dev/null || terraform import aws_s3_bucket.frontend pkb-frontend-personal-knowledge-base 2>/dev/null || echo "⚠️ Skipped"
         
+        # API Gateway (if exists)
+        echo "🌐 Checking for existing API Gateway..."
+        API_ID=$(aws apigateway get-rest-apis --query 'items[?name==`pkb-api`].id' --output text 2>/dev/null || echo "")
+        if [ -n "$API_ID" ] && [ "$API_ID" != "None" ]; then
+          echo "🌐 Found existing API Gateway: $API_ID"
+          terraform state show aws_api_gateway_rest_api.api &>/dev/null || terraform import aws_api_gateway_rest_api.api "$API_ID" 2>/dev/null || echo "⚠️ Skipped API Gateway import"
+        fi
+        
         # CloudFront Distribution (if exists)
         echo "☁️ Checking for existing CloudFront distributions..."
-        DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Comment=='Personal Knowledge Base Frontend' && Status=='Deployed'].Id | [0]" --output text 2>/dev/null || echo "")
-        if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "null" ]; then
+        DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Comment=='Personal Knowledge Base Frontend'].Id | [0]" --output text 2>/dev/null || echo "")
+        if [ -n "$DIST_ID" ] && [ "$DIST_ID" != "None" ]; then
           echo "☁️ Found existing CloudFront distribution: $DIST_ID"
-          terraform state show aws_cloudfront_distribution.frontend &>/dev/null || terraform import aws_cloudfront_distribution.frontend "$DIST_ID" 2>/dev/null || echo "⚠️ Skipped CloudFront import"
+          terraform state show aws_cloudfront_distribution.frontend[0] &>/dev/null || terraform import aws_cloudfront_distribution.frontend[0] "$DIST_ID" 2>/dev/null || echo "⚠️ Skipped CloudFront import"
         fi
         
         echo "✅ Import check completed"
-      continue-on-error: true
-    
-    - name: Skip Import (Fast Mode)
-      if: env.SKIP_IMPORT == 'true'
-      run: |
-        echo "⚡ Fast mode: Skipping resource import step"
-        echo "💡 Set env.SKIP_IMPORT to false to enable imports"
+        echo "📋 Resources in Terraform state:"
+        terraform state list 2>/dev/null || echo "No resources in state yet"
+        echo ""
+        echo "🎯 Deployment mode: Terraform will now create new resources or update existing ones as needed"
       continue-on-error: true
     
     - name: Terraform Plan

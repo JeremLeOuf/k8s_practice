@@ -107,8 +107,9 @@ resource "aws_cloudfront_distribution" "frontend" {
 
   # API Gateway Origin for /items, /transactions, /balance
   origin {
-    domain_name = replace(aws_api_gateway_stage.prod.invoke_url, "/https?://", "")
+    domain_name = replace(replace(aws_api_gateway_stage.prod.invoke_url, "/https?://", ""), "/prod.*", "")
     origin_id   = "api-gateway"
+    origin_path = "/prod"
 
     custom_origin_config {
       http_port              = 443
