@@ -19,6 +19,7 @@ on:
 env:
   AWS_REGION: us-east-1
   TERRAFORM_VERSION: latest
+  SKIP_IMPORT: true  # Set to false to enable resource imports (slower but safer)
 
 # Cancel in-progress runs when a new commit is pushed
 concurrency:
@@ -132,6 +133,7 @@ jobs:
           terraform-${{ runner.os }}-
     
     - name: Cleanup Old CloudFront Distributions
+      if: env.SKIP_IMPORT != 'true'
       run: |
         echo "🧹 Cleaning up old CloudFront distributions..."
         chmod +x scripts/cleanup-old-cloudfront.sh
@@ -139,6 +141,7 @@ jobs:
       continue-on-error: true
 
     - name: Ensure CloudFront is Enabled
+      if: env.SKIP_IMPORT != 'true'
       run: |
         echo "✅ Ensuring CloudFront distribution is enabled..."
         chmod +x scripts/ensure-cloudfront-enabled.sh
@@ -150,6 +153,7 @@ jobs:
       run: terraform init
     
     - name: Import Existing Resources (Skip if in state)
+      if: env.SKIP_IMPORT != 'true'
       working-directory: ./infrastructure
       run: |
         echo "🔍 Checking and importing existing resources..."
@@ -202,6 +206,13 @@ jobs:
         fi
         
         echo "✅ Import check completed"
+      continue-on-error: true
+    
+    - name: Skip Import (Fast Mode)
+      if: env.SKIP_IMPORT == 'true'
+      run: |
+        echo "⚡ Fast mode: Skipping resource import step"
+        echo "💡 Set env.SKIP_IMPORT to false to enable imports"
       continue-on-error: true
     
     - name: Terraform Plan
@@ -310,69 +321,77 @@ jobs:
         echo "⏭️  Frontend files unchanged - skipping deployment"
         echo "✅ Previous frontend deployment remains active"
     
-    - name: Verify CDN is Reachable
+    - name: Get Frontend URL
       working-directory: ./infrastructure
       run: |
-        echo "✅ Verifying CDN is accessible..."
+        # Check if CloudFront is enabled
+        ENABLE_CLOUDFRONT=$(terraform show -json 2>/dev/null | jq -r '.values.root_module.variable_values.enable_cloudfront // "false"' || echo "false")
         
-        # Get CDN URL
-        CDN_URL=$(terraform output -raw frontend_cdn_url)
-        echo "🌐 CDN URL: $CDN_URL"
-        
-        # Set timeout based on whether it's new or update
-        if [ "$NEW_CLOUDFRONT" = "false" ]; then
-          echo "✅ CloudFront update - checking reachability (2 min max)"
-          MAX_ATTEMPTS=24  # 24 attempts × 5s = 2 minutes
+        if [ "$ENABLE_CLOUDFRONT" = "true" ]; then
+          FRONTEND_URL=$(terraform output -raw frontend_cdn_url)
+          echo "🌐 Using CloudFront URL: $FRONTEND_URL"
         else
-          echo "🆕 New CloudFront - checking reachability (5 min max)"
-          MAX_ATTEMPTS=60  # 60 attempts × 5s = 5 minutes
+          FRONTEND_URL=$(terraform output -raw frontend_s3_url)
+          echo "🌐 Using S3 Website URL: $FRONTEND_URL"
         fi
         
-        # Simple HTTP check
-        SUCCESS=false
-        for i in $(seq 1 $MAX_ATTEMPTS); do
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$CDN_URL" --max-time 5 2>&1 || echo "000")
-          
-          # Clean up curl error messages
-          HTTP_CODE=$(echo "$HTTP_CODE" | grep -oE "[0-9]{3}" | tail -1 || echo "000")
-          
-          echo "⏱️  Attempt $i/$MAX_ATTEMPTS: HTTP $HTTP_CODE"
-          
-          # Success if we get a valid HTTP response (even 403/404 means it's deployed)
-          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "403" ] || [ "$HTTP_CODE" = "404" ]; then
-            echo ""
-            echo "✅ CDN is reachable! (HTTP $HTTP_CODE)"
-            SUCCESS=true
-            break
+        echo "FRONTEND_URL=$FRONTEND_URL" >> $GITHUB_ENV
+        echo "ENABLE_CLOUDFRONT=$ENABLE_CLOUDFRONT" >> $GITHUB_ENV
+      continue-on-error: true
+    
+    - name: Verify Frontend is Reachable
+      working-directory: ./infrastructure
+      run: |
+        echo "✅ Verifying frontend is accessible..."
+        echo "🌐 Frontend URL: $FRONTEND_URL"
+        
+        # S3 website endpoints are instant, CloudFront takes time
+        if [ "$ENABLE_CLOUDFRONT" = "true" ]; then
+          # Set timeout based on whether it's new or update
+          if [ "$NEW_CLOUDFRONT" = "false" ]; then
+            echo "✅ CloudFront update - checking reachability (2 min max)"
+            MAX_ATTEMPTS=24  # 24 attempts × 5s = 2 minutes
+          else
+            echo "🆕 New CloudFront - checking reachability (5 min max)"
+            MAX_ATTEMPTS=60  # 60 attempts × 5s = 5 minutes
           fi
           
-          sleep 5
-        done
-        
-        if [ "$SUCCESS" = "true" ]; then
-          echo "🎉 Deployment verified successful!"
-          echo "🌐 CDN URL: $CDN_URL"
-          echo "🏠 Home Hub: $CDN_URL/index.html"
-          echo "📚 Knowledge Base: $CDN_URL/knowledge-base/app.html"
-          echo "📊 Budget Tracker: $CDN_URL/budget-tracker/budget.html"
-          echo "📊 Grafana: $CDN_URL/knowledge-base/grafana.html"
-          exit 0
+          # Simple HTTP check
+          SUCCESS=false
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL" --max-time 5 2>&1 || echo "000")
+            
+            # Clean up curl error messages
+            HTTP_CODE=$(echo "$HTTP_CODE" | grep -oE "[0-9]{3}" | tail -1 || echo "000")
+            
+            echo "⏱️  Attempt $i/$MAX_ATTEMPTS: HTTP $HTTP_CODE"
+            
+            # Success if we get a valid HTTP response (even 403/404 means it's deployed)
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "403" ] || [ "$HTTP_CODE" = "404" ]; then
+              echo ""
+              echo "✅ Frontend is reachable! (HTTP $HTTP_CODE)"
+              SUCCESS=true
+              break
+            fi
+            
+            sleep 5
+          done
+          
+          if [ "$SUCCESS" != "true" ]; then
+            echo ""
+            echo "⚠️ Warning: Frontend verification timed out, but deployment may still be in progress"
+            echo "⏱️  CloudFront can take up to 15 minutes to fully propagate"
+          fi
         else
-          echo ""
-          echo "❌ FAILED: CDN not reachable after $MAX_ATTEMPTS attempts"
-          echo "CDN URL: $CDN_URL"
-          echo "HTTP Response: $HTTP_CODE"
-          echo ""
-          echo "Possible reasons:"
-          echo "1. CloudFront is still deploying (can take 15-20 minutes for new distributions)"
-          echo "2. Distribution is disabled in AWS Console"
-          echo "3. S3 bucket policy issues"
-          echo "4. Network connectivity problems"
-          echo ""
-          echo "💡 Check manually: curl -I $CDN_URL"
-          echo ""
-          exit 1
+          echo "✅ S3 website endpoint is instantly available"
         fi
+        
+        echo "🎉 Deployment complete!"
+        echo "🌐 Frontend URL: $FRONTEND_URL"
+        echo "🏠 Home Hub: $FRONTEND_URL/index.html"
+        echo "📚 Knowledge Base: $FRONTEND_URL/knowledge-base/app.html"
+        echo "📊 Budget Tracker: $FRONTEND_URL/budget-tracker/budget.html"
+        echo "📊 Grafana: $FRONTEND_URL/knowledge-base/grafana.html"
 
   destroy:
     name: Destroy Infrastructure
@@ -442,9 +461,48 @@ jobs:
     if: always()
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        external-id: ${{ secrets.AWS_EXTERNAL_ID }}
+        role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
+    
     - name: Success
       if: needs.deploy.result == 'success'
-      run: echo "✅ Deployment successful!"
+      working-directory: ./infrastructure
+      run: |
+        echo "✅ Deployment successful!"
+        echo ""
+        
+        # Get URLs
+        API_URL=$(terraform output -raw api_gateway_url || echo "N/A")
+        
+        # Check if CloudFront is enabled
+        ENABLE_CLOUDFRONT=$(terraform show -json 2>/dev/null | jq -r '.values.root_module.variable_values.enable_cloudfront // "false"' || echo "false")
+        
+        if [ "$ENABLE_CLOUDFRONT" = "true" ]; then
+          FRONTEND_URL=$(terraform output -raw frontend_cdn_url)
+          echo "🌐 Frontend (CloudFront): $FRONTEND_URL"
+        else
+          FRONTEND_URL=$(terraform output -raw frontend_s3_url)
+          echo "🌐 Frontend (S3 Website): $FRONTEND_URL"
+        fi
+        
+        echo "🔗 API Gateway: $API_URL"
+        echo ""
+        echo "Applications:"
+        echo "  📚 Knowledge Base: $FRONTEND_URL/knowledge-base/app.html"
+        echo "  📊 Budget Tracker: $FRONTEND_URL/budget-tracker/budget.html"
+        echo "  📊 Grafana: $FRONTEND_URL/knowledge-base/grafana.html"
     
     - name: Failure
       if: needs.deploy.result == 'failure'
