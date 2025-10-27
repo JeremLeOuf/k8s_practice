@@ -19,7 +19,7 @@ on:
 env:
   AWS_REGION: us-east-1
   TERRAFORM_VERSION: latest
-  SKIP_IMPORT: false  # Temporarily false to import existing resources, then set to true for fast deployments
+  SKIP_IMPORT: true  # Fast mode: skips resource imports for ~45-75s faster deployments
 
 # Cancel in-progress runs when a new commit is pushed
 concurrency:
